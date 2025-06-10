@@ -1,0 +1,9 @@
+node_modules
+.git
+.gitignore
+*.md
+dist
+.DS_Store
+.gitlab-ci.yml
+.vscode
+.idea
