@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 聊天與文檔向量化系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .document-card {
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .document-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 2rem 0;
+    }
+
+    .loading-spinner {
+      width: 3rem;
+      height: 3rem;
+    }
+
+    .chat-container {
+      max-width: 100%;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #chat-messages {
+      height: 400px;
+      overflow-y: auto;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      position: relative;
+    }
+
+    .user-message {
+      background-color: #e3f2fd;
+      margin-left: 20%;
+    }
+
+    .assistant-message {
+      background-color: #f1f1f1;
+      margin-right: 20%;
+      white-space: pre-wrap;
+    }
+
+    .message-feedback {
+      display: none;
+      position: absolute;
+      right: 10px;
+      top: 5px;
+    }
+
+    .assistant-message:hover .message-feedback {
+      display: flex;
+      gap: 5px;
+    }
+
+    .feedback-btn {
+      border: none;
+      background: none;
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    .feedback-btn:hover {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .feedback-btn.liked {
+      color: #198754;
+    }
+
+    .feedback-btn.disliked {
+      color: #dc3545;
+    }
+
+    .feedback-btn.favorite {
+      color: #fd7e14;
+    }
+
+    .feedback-btn.favorite.active {
+      color: #ffc107;
+    }
+
+    .error-message {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+
+    #chat-form {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    #message-input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .nav-tabs {
+      margin-bottom: 20px;
+    }
+
+    .tab-content {
+      padding: 20px;
+      background-color: white;
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      min-height: calc(100vh - 150px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tab-pane {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .document {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+
+    .document-id {
+      font-weight: bold;
+      color: #666;
+    }
+
+    .document-text {
+      margin-top: 10px;
+    }
+
+    #model-select {
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      background-color: #f8f9fa;
+    }
+
+    .model-select-container {
+      margin-bottom: 15px;
+    }
+
+    .model-badge {
+      font-size: 0.75rem;
+      color: #6c757d;
+      font-style: italic;
+      margin-top: 5px;
+    }
+
+    .history-item {
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+
+    .history-item:hover {
+      background-color: #f8f9fa;
+      border-left-color: #0d6efd;
+    }
+
+    .history-item .history-date {
+      font-size: 0.7rem;
+      color: #6c757d;
+    }
+
+    .history-item .history-message {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-item .history-rating {
+      color: #ffc107;
+      font-size: 0.8rem;
+    }
+
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .file-item:last-child {
+      border-bottom: none;
+    }
+
+    .file-info {
+      flex: 1;
+    }
+
+    .file-name {
+      font-weight: bold;
+    }
+
+    .file-size {
+      color: #6c757d;
+      font-size: 0.8rem;
+    }
+
+    .file-remove {
+      cursor: pointer;
+      color: #dc3545;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">AI 聊天與文檔向量化系統</h1>
+
+    <!-- 頁籤導航 -->
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button"
+          role="tab">聊天室</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="favorites-tab" data-bs-toggle="tab" data-bs-target="#favorites" type="button"
+          role="tab">我的最愛</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button"
+          role="tab">文檔處理</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="vector-management-tab" data-bs-toggle="tab" data-bs-target="#vector-management"
+          type="button" role="tab">向量資料列表管理</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations"
+          type="button" role="tab">推薦列表</button>
+      </li>
+    </ul>
+
+    <!-- 頁籤內容 -->
+    <div class="tab-content" id="myTabContent">
+      <!-- 聊天室頁籤 -->
+      <div class="tab-pane fade show active" id="chat" role="tabpanel">
+        <div class="chat-container d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex align-items-center">
+              <label for="model-select" class="form-label mb-0 me-2">語言模型：</label>
+              <select id="model-select" class="form-select form-select-sm" style="width: 150px;">
+                <option value="gemini">Google Gemini</option>
+                <option value="openai">OpenAI GPT</option>
+              </select>
+              <label for="embedding-model-select" class="form-label mb-0 ms-3 me-2">嵌入模型：</label>
+              <select id="embedding-model-select" class="form-select form-select-sm" style="width: 220px;">
+                <optgroup label="OpenAI">
+                  <option value="openai-ada-002">OpenAI Ada-002 (默認)</option>
+                  <option value="openai-3-small">OpenAI Embedding-3-Small</option>
+                  <option value="openai-3-large">OpenAI Embedding-3-Large</option>
+                </optgroup>
+                <optgroup label="Google">
+                  <option value="gemini-embedding">Gemini Embedding-001</option>
+                </optgroup>
+              </select>
+            </div>
+            <button id="historyBtn" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+              data-bs-target="#historyModal">
+              <i class="bi bi-clock-history"></i> 歷史記錄
+            </button>
+          </div>
+          <div id="chat-messages" class="flex-grow-1"></div>
+          <form id="chat-form" class="mt-3">
+            <input type="text" id="message-input" placeholder="輸入訊息..." required>
+            <div class="button-group">
+              <button type="submit" data-api="chat" class="btn btn-primary">一般聊天</button>
+              <button type="submit" data-api="rag" class="btn btn-success">RAG 聊天</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 歷史記錄模態框 -->
+      <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="historyModalLabel">對話歷史記錄</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div id="historyLoading" class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="small mt-2">載入中...</p>
+              </div>
+              <div id="historyList" class="list-group">
+                <!-- 歷史對話將在這裡動態生成 -->
+              </div>
+              <div id="noHistory" class="text-center py-5" style="display: none;">
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle fs-3 d-block mb-3"></i>
+                  <h5>暫無對話歷史</h5>
+                  <p>開始聊天後將會自動記錄您的對話</p>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button id="clearHistoryBtn" class="btn btn-outline-danger me-auto">清空歷史</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 文檔處理頁籤 -->
+      <div class="tab-pane fade" id="documents" role="tabpanel">
+        <div class="row mb-4">
+          <div class="col-md-8 offset-md-2">
+            <div class="card">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">上傳文檔</h5>
+              </div>
+              <div class="card-body">
+                <div id="dropArea" class="text-center py-5"
+                  style="cursor:pointer; border:2px dashed #ccc; border-radius:5px;">
+                  <input type="file" id="fileInput" multiple accept=".pdf,.docx,.xlsx,.txt,.csv" style="display:none;">
+                  <div class="d-flex flex-column align-items-center pointer-events-none">
+                    <i class="bi bi-cloud-arrow-up fs-1 mb-3 text-primary"></i>
+                    <h5>拖放檔案或點擊此處上傳</h5>
+                    <p class="text-muted">支援格式: PDF、Word、Excel、TXT、CSV</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-list-container" id="fileListContainer" style="display: none;">
+          <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">檔案列表</h5>
+              <div>
+                <button id="clearFilesBtn" class="btn btn-outline-danger btn-sm">清空列表</button>
+                <button id="processFilesBtn" class="btn btn-primary btn-sm">處理檔案</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="fileList" class="file-list">
+                <!-- 文件列表將在這裡動態生成 -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="processingLoading" class="loading mt-4" style="display: none;">
+          <div class="card">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">處理進度</h5>
+            </div>
+            <div class="card-body text-center py-4">
+              <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">處理中...</span>
+              </div>
+              <p>正在處理檔案，請稍候...</p>
+              <div class="progress mt-3" style="height: 25px;">
+                <div id="processingProgress" class="progress-bar" role="progressbar" style="width: 0%;"
+                  aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="processedDocuments" class="mt-4" style="display: none;">
+          <div class="card">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">處理結果</h5>
+            </div>
+            <div class="card-body">
+              <div class="row" id="processedDocumentsList">
+                <!-- 處理結果將在這裡動態生成 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 向量資料列表管理頁籤 -->
+      <div class="tab-pane fade" id="vector-management" role="tabpanel">
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">向量資料列表</h5>
+            <div>
+              <button id="refreshVectorsBtn" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-clockwise"></i> 刷新列表
+              </button>
+              <button id="createCollectionBtn" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-plus-circle"></i> 創建集合
+              </button>
+              <button id="deleteCollectionBtn" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash"></i> 刪除集合
+              </button>
+              <button id="addVectorBtn" class="btn btn-outline-info btn-sm" data-bs-toggle="modal"
+                data-bs-target="#addVectorModal">
+                <i class="bi bi-plus"></i> 新增文檔
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="selectAllVectors">
+                <label class="form-check-label" for="selectAllVectors">
+                  全選
+                </label>
+              </div>
+              <div class="d-flex">
+                <button id="searchVectorBtn" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal"
+                  data-bs-target="#searchVectorModal">
+                  <i class="bi bi-search"></i> 向量搜尋
+                </button>
+                <button id="batchDeleteBtn" class="btn btn-danger btn-sm" disabled>
+                  <i class="bi bi-trash"></i> 批量刪除
+                </button>
+              </div>
+            </div>
+            <div id="vectorsLoading" class="text-center py-3" style="display: none;">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-2">載入中...</p>
+            </div>
+            <div id="vectorsList" class="row">
+              <!-- 向量資料將在這裡動態生成 -->
+            </div>
+            <div id="vectorsEmpty" class="alert alert-info text-center" style="display: none;">
+              沒有找到向量資料。請先創建向量集合並新增資料。
+            </div>
+            <div id="vectorsError" class="alert alert-danger text-center" style="display: none;">
+              載入向量資料時發生錯誤。
+            </div>
+          </div>
+        </div>
+
+        <!-- 向量詳情模態框 -->
+        <div class="modal fade" id="vectorDetailModal" tabindex="-1" aria-labelledby="vectorDetailModalLabel"
+          aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="vectorDetailModalLabel">向量詳情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <strong>ID:</strong> <span id="vectorDetailId"></span>
+                </div>
+                <div class="mb-3">
+                  <strong>文本:</strong>
+                  <p id="vectorDetailText" class="border p-2 rounded bg-light"></p>
+                </div>
+                <div class="mb-3">
+                  <strong>向量維度:</strong> <span id="vectorDetailDimension"></span>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="deleteVectorBtn">刪除</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 新增向量模態框 -->
+        <div class="modal fade" id="addVectorModal" tabindex="-1" aria-labelledby="addVectorModalLabel"
+          aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="addVectorModalLabel">新增向量文檔</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <form id="addVectorForm">
+                  <div class="mb-3">
+                    <label for="vectorText" class="form-label">文檔內容</label>
+                    <textarea class="form-control" id="vectorText" rows="5" required
+                      placeholder="請輸入文檔內容..."></textarea>
+                    <div class="form-text">文檔內容將被向量化並存儲到 Milvus 中</div>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="submitAddVectorBtn">新增</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 向量搜尋模態框 -->
+        <div class="modal fade" id="searchVectorModal" tabindex="-1" aria-labelledby="searchVectorModalLabel"
+          aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="searchVectorModalLabel">向量搜尋</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <form id="searchVectorForm">
+                  <div class="mb-3">
+                    <label for="searchQuery" class="form-label">搜尋關鍵詞</label>
+                    <input type="text" class="form-control" id="searchQuery" required placeholder="請輸入搜尋關鍵詞...">
+                  </div>
+                  <div class="mb-3">
+                    <label for="topK" class="form-label">返回結果數量 (TopK)</label>
+                    <input type="number" class="form-control" id="topK" value="3" min="1" max="20">
+                    <div class="form-text">設定要返回的相似文檔數量</div>
+                  </div>
+                </form>
+
+                <div id="searchResults" class="mt-4" style="display: none;">
+                  <h6>搜尋結果:</h6>
+                  <div id="searchResultsList" class="list-group mt-2">
+                    <!-- 搜尋結果將在這裡動態生成 -->
+                  </div>
+                </div>
+
+                <div id="searchLoading" class="text-center py-3" style="display: none;">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                  <p class="mt-2">搜尋中...</p>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                <button type="button" class="btn btn-primary" id="submitSearchBtn">搜尋</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 我的最愛頁籤 -->
+      <div class="tab-pane fade" id="favorites" role="tabpanel">
+        <div class="row">
+          <div class="col-12 mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <h4>我的收藏回覆</h4>
+              <button id="clearFavoritesBtn" class="btn btn-outline-danger btn-sm">清空所有收藏</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="favoritesLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3">載入收藏中...</p>
+        </div>
+
+        <div id="noFavorites" class="text-center py-5" style="display: none;">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle fs-3 d-block mb-3"></i>
+            <h5>尚無收藏回覆</h5>
+            <p class="mb-1">在聊天室中，當助理回覆出現時</p>
+            <p>點擊回覆旁的 <i class="bi bi-star"></i> 可加入收藏</p>
+          </div>
+        </div>
+
+        <div id="favoritesList" class="row" style="display: none;">
+          <!-- 收藏的回覆將在這裡動態生成 -->
+        </div>
+      </div>
+
+      <!-- 推薦列表頁籤 -->
+      <div class="tab-pane fade" id="recommendations" role="tabpanel">
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">個人化推薦</h5>
+              </div>
+              <div class="card-body">
+                <div id="personalRecommendations" class="row">
+                  <!-- 個人化推薦將在這裡動態生成 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">熱門文檔</h5>
+              </div>
+              <div class="card-body">
+                <div id="popularDocuments" class="list-group list-group-flush">
+                  <!-- 熱門文檔將在這裡動態生成 -->
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">您可能感興趣的</h5>
+              </div>
+              <div class="card-body">
+                <div id="interestDocuments" class="list-group list-group-flush">
+                  <!-- 興趣推薦將在這裡動態生成 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // 檢查DOM元素存在性的輔助函數
+    function safeGetElement(id) {
+      const element = document.getElementById(id);
+      if (!element) {
+        console.warn(`找不到元素: ${id}`);
+        return null;
+      }
+      return element;
+    }
+
+    // 安全的API請求函數
+    async function apiCall(url, method = 'GET', body = null) {
+      try {
+        const options = {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        };
+
+        if (body) {
+          options.body = JSON.stringify(body);
+        }
+
+        const response = await fetch(url, options);
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          data = { error: '無法解析回應' };
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || `請求失敗 (${response.status})`);
+        }
+
+        return data;
+      } catch (error) {
+        console.error(`API請求錯誤 (${url}):`, error);
+        throw error;
+      }
+    }
+
+    // 聊天功能
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const modelSelect = document.getElementById('model-select');
+
+    // 初始化歷史記錄相關元素
+    const historyList = document.getElementById('historyList');
+    const historyLoading = document.getElementById('historyLoading');
+    const noHistory = document.getElementById('noHistory');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+    // 當歷史記錄按鈕點擊時載入歷史
+    document.getElementById('historyBtn').addEventListener('click', loadChatHistory);
+
+    // 清空歷史按鈕點擊事件
+    clearHistoryBtn.addEventListener('click', clearChatHistory);
+
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = messageInput.value.trim();
+      if (!message) return;
+
+      const apiType = e.submitter.dataset.api;
+      const endpoint = `/api/${apiType}`;
+      const selectedModel = modelSelect.value;
+      const selectedEmbeddingModel = document.getElementById('embedding-model-select').value;
+
+      // 添加用戶消息到聊天界面
+      addMessage(message, 'user-message');
+
+      // 記錄聊天開始時間
+      const chatStartTime = new Date();
+
+      try {
+        const data = await apiCall(endpoint, 'POST', {
+          message,
+          model: selectedModel,
+          embedding_model: selectedEmbeddingModel
+        });
+
+        // 顯示回應和使用的模型
+        let responseText = data.response;
+        if (data.model) {
+          responseText += `\n\n(使用模型: ${data.model === 'gemini' ? 'Google Gemini' : 'OpenAI GPT'})`;
+        }
+        if (data.embedding_model && apiType === 'rag') {
+          responseText += `\n(嵌入模型: ${data.embedding_model === 'gemini' ? 'Google Gemini' : 'OpenAI'})`;
+        }
+
+        addMessage(responseText, 'assistant-message');
+
+        // 記錄聊天記錄
+        saveChatHistory({
+          id: Date.now().toString(),
+          userMessage: message,
+          aiResponse: responseText,
+          timestamp: chatStartTime.toISOString(),
+          model: data.model,
+          embeddingModel: data.embedding_model,
+          apiType
+        });
+      } catch (error) {
+        addMessage(`錯誤: ${error.message}`, 'error-message');
+      }
+
+      messageInput.value = '';
+    });
+
+    function addMessage(text, className) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${className}`;
+      messageDiv.textContent = text;
+
+      // 如果是AI助手的訊息，添加評價按鈕
+      if (className === 'assistant-message') {
+        // 創建評價按鈕容器
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'message-feedback';
+
+        // 添加喜歡按鈕
+        const likeBtn = document.createElement('button');
+        likeBtn.className = 'feedback-btn';
+        likeBtn.innerHTML = '<i class="bi bi-hand-thumbs-up"></i>';
+        likeBtn.title = '喜歡';
+        likeBtn.onclick = function () {
+          this.classList.toggle('liked');
+          if (this.classList.contains('liked')) {
+            dislikeBtn.classList.remove('disliked');
+          }
+          saveFeedback(messageDiv, this.classList.contains('liked') ? 'like' : null);
+        };
+
+        // 添加不喜歡按鈕
+        const dislikeBtn = document.createElement('button');
+        dislikeBtn.className = 'feedback-btn';
+        dislikeBtn.innerHTML = '<i class="bi bi-hand-thumbs-down"></i>';
+        dislikeBtn.title = '不喜歡';
+        dislikeBtn.onclick = function () {
+          this.classList.toggle('disliked');
+          if (this.classList.contains('disliked')) {
+            likeBtn.classList.remove('liked');
+          }
+          saveFeedback(messageDiv, this.classList.contains('disliked') ? 'dislike' : null);
+        };
+
+        // 添加收藏按鈕
+        const favoriteBtn = document.createElement('button');
+        favoriteBtn.className = 'feedback-btn';
+        favoriteBtn.innerHTML = '<i class="bi bi-star"></i>';
+        favoriteBtn.title = '加入收藏';
+        favoriteBtn.onclick = function () {
+          this.classList.toggle('active');
+          if (this.classList.contains('active')) {
+            this.innerHTML = '<i class="bi bi-star-fill"></i>';
+            this.title = '取消收藏';
+            addToFavorites(text);
+          } else {
+            this.innerHTML = '<i class="bi bi-star"></i>';
+            this.title = '加入收藏';
+            removeFromFavorites(text);
+          }
+        };
+
+        // 將按鈕添加到評價容器
+        feedbackDiv.appendChild(likeBtn);
+        feedbackDiv.appendChild(dislikeBtn);
+        feedbackDiv.appendChild(favoriteBtn);
+
+        // 將評價容器添加到訊息
+        messageDiv.appendChild(feedbackDiv);
+      }
+
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // 保存用戶反饋
+    function saveFeedback(messageElement, feedbackType) {
+      const messageText = messageElement.textContent;
+      console.log(`用戶${feedbackType === 'like' ? '喜歡' : '不喜歡'}回覆: ${messageText.substring(0, 50)}...`);
+      // 這裡可以添加API請求，將反饋發送到後端
+    }
+
+    // 添加到收藏
+    function addToFavorites(text) {
+      console.log(`添加到收藏: ${text.substring(0, 50)}...`);
+
+      // 獲取已有的收藏
+      let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
+      // 添加新的收藏（避免重複）
+      const newFavorite = {
+        id: Date.now().toString(),
+        text: text,
+        timestamp: new Date().toISOString()
+      };
+
+      // 檢查是否已存在相同文本
+      const exists = favorites.some(f => f.text === text);
+      if (!exists) {
+        favorites.push(newFavorite);
+        localStorage.setItem('favorites', JSON.stringify(favorites));
+
+        // 如果用戶正在收藏頁面，則更新顯示
+        if (document.querySelector('#favorites').classList.contains('active')) {
+          loadFavorites();
+        }
+
+        alert('已加入收藏！');
+      }
+    }
+
+    // 移除收藏
+    function removeFromFavorites(text) {
+      console.log(`移除收藏: ${text.substring(0, 50)}...`);
+
+      // 獲取已有的收藏
+      let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
+      // 移除匹配的收藏
+      favorites = favorites.filter(f => f.text !== text);
+      localStorage.setItem('favorites', JSON.stringify(favorites));
+
+      // 如果用戶正在收藏頁面，則更新顯示
+      if (document.querySelector('#favorites').classList.contains('active')) {
+        loadFavorites();
+      }
+    }
+
+    // 文檔向量化功能
+    document.getElementById('processFilesBtn').addEventListener('click', async () => {
+      const processBtn = document.getElementById('processFilesBtn');
+      const loading = document.querySelector('.loading');
+      const documentsList = document.getElementById('processedDocumentsList');
+
+      try {
+        processBtn.disabled = true;
+        loading.style.display = 'block';
+        documentsList.innerHTML = '';
+
+        const response = await fetch('/api/process-json', {
+          method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || '處理 JSON 失敗');
+        }
+
+        documentsList.innerHTML = ''; // 清空之前的內容
+        data.forEach(doc => {
+          const card = document.createElement('div');
+          card.className = 'col-md-6';
+          card.innerHTML = `
+            <div class="card document-card">
+              <div class="card-body">
+                <h5 class="card-title">文檔 ID: ${doc.id || 'N/A'}</h5>
+                <p class="card-text">${doc.content}</p>
+                <p class="card-text"><small class="text-muted">向量維度: ${doc.vector ? doc.vector.length : 0}</small></p>
+              </div>
+            </div>
+          `;
+          documentsList.appendChild(card);
+        });
+
+      } catch (error) {
+        documentsList.innerHTML = `
+          <div class="col-12">
+            <div class="alert alert-danger" role="alert">
+              <h4 class="alert-heading">發生錯誤</h4>
+              <p>${error.message}</p>
+              ${error.details ? `<hr><p class="mb-0">詳細信息: ${error.details}</p>` : ''}
+            </div>
+          </div>
+        `;
+      } finally {
+        processBtn.disabled = false;
+        loading.style.display = 'none';
+      }
+    });
+
+    // 向量資料列表管理功能
+    const refreshVectorsBtn = document.getElementById('refreshVectorsBtn');
+    const createCollectionBtn = document.getElementById('createCollectionBtn');
+    const deleteCollectionBtn = document.getElementById('deleteCollectionBtn');
+    const vectorsList = document.getElementById('vectorsList');
+    const vectorsLoading = document.getElementById('vectorsLoading');
+    const vectorsEmpty = document.getElementById('vectorsEmpty');
+    const vectorsError = document.getElementById('vectorsError');
+    const addVectorForm = document.getElementById('addVectorForm');
+    const submitAddVectorBtn = document.getElementById('submitAddVectorBtn');
+    const selectAllVectors = document.getElementById('selectAllVectors');
+    const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+    const submitSearchBtn = document.getElementById('submitSearchBtn');
+
+    // 刷新按鈕事件
+    refreshVectorsBtn.addEventListener('click', () => {
+      loadVectorsList();
+    });
+
+    // 初始化向量管理功能
+    async function initializeVectorManagement() {
+      // 檢查並確保集合已創建
+      ensureCollectionExists().then(() => {
+        // 加載向量列表
+        loadVectorsList();
+      }).catch(error => {
+        console.error('初始化向量管理失敗:', error);
+        vectorsError.style.display = 'block';
+        vectorsError.textContent = `初始化失敗: ${error.message}`;
+        vectorsLoading.style.display = 'none';
+      });
+    }
+
+    // 確保集合存在
+    async function ensureCollectionExists() {
+      try {
+        // 後端已經實現了自動檢查和創建集合的功能，
+        // 我們只需發送一個無害的請求來觸發這個流程
+        await apiCall('/api/documents');
+        return true;
+      } catch (error) {
+        console.error('確保集合存在失敗:', error);
+        throw error;
+      }
+    }
+
+    // 創建集合按鈕事件 (保留但不再需要手動點擊)
+    createCollectionBtn.addEventListener('click', async () => {
+      try {
+        vectorsLoading.style.display = 'block';
+        await apiCall('/api/collections/create', 'POST');
+        alert('集合創建成功！');
+        loadVectorsList(); // 重新加載列表
+      } catch (error) {
+        alert(`錯誤: ${error.message}`);
+      } finally {
+        vectorsLoading.style.display = 'none';
+      }
+    });
+
+    // 刪除集合按鈕事件
+    deleteCollectionBtn.addEventListener('click', async () => {
+      if (!confirm('警告：這將刪除整個向量集合及其所有資料！確定要繼續嗎？')) {
+        return;
+      }
+
+      try {
+        vectorsLoading.style.display = 'block';
+        await apiCall('/api/collections', 'DELETE');
+        alert('集合刪除成功！');
+        loadVectorsList(); // 重新加載列表
+      } catch (error) {
+        alert(`錯誤: ${error.message}`);
+      } finally {
+        vectorsLoading.style.display = 'none';
+      }
+    });
+
+    // 全選/取消全選
+    selectAllVectors.addEventListener('change', () => {
+      const isChecked = selectAllVectors.checked;
+      document.querySelectorAll('.vector-checkbox').forEach(checkbox => {
+        checkbox.checked = isChecked;
+      });
+      updateBatchDeleteBtn();
+    });
+
+    // 更新批量刪除按鈕狀態
+    function updateBatchDeleteBtn() {
+      const selectedCount = document.querySelectorAll('.vector-checkbox:checked').length;
+      batchDeleteBtn.disabled = selectedCount === 0;
+      batchDeleteBtn.textContent = selectedCount > 0 ? `刪除選中的 ${selectedCount} 項` : '批量刪除';
+    }
+
+    // 批量刪除按鈕事件
+    batchDeleteBtn.addEventListener('click', async () => {
+      const selectedIds = Array.from(document.querySelectorAll('.vector-checkbox:checked'))
+        .map(checkbox => checkbox.value);
+
+      if (selectedIds.length === 0) return;
+
+      if (!confirm(`確定要刪除選中的 ${selectedIds.length} 項嗎？`)) {
+        return;
+      }
+
+      try {
+        vectorsLoading.style.display = 'block';
+        await apiCall('/api/documents/delete/batch', 'POST', { ids: selectedIds });
+        alert('批量刪除成功！');
+        loadVectorsList(); // 重新加載列表
+      } catch (error) {
+        alert(`錯誤: ${error.message}`);
+      } finally {
+        vectorsLoading.style.display = 'none';
+      }
+    });
+
+    // 載入向量資料列表
+    async function loadVectorsList() {
+      try {
+        // 重置顯示狀態
+        vectorsList.innerHTML = '';
+        vectorsLoading.style.display = 'block';
+        vectorsEmpty.style.display = 'none';
+        vectorsError.style.display = 'none';
+
+        const documents = await apiCall('/api/documents');
+
+        if (documents.length === 0) {
+          vectorsEmpty.style.display = 'block';
+          return;
+        }
+
+        // 渲染向量資料列表
+        documents.forEach(doc => {
+          const card = document.createElement('div');
+          card.className = 'col-md-4 mb-3';
+          card.innerHTML = `
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                  <input type="checkbox" class="form-check-input vector-checkbox me-2" value="${doc.id}">
+                  <h5 class="card-title text-truncate mb-0">ID: ${doc.id}</h5>
+                </div>
+                <p class="card-text text-truncate">${doc.text}</p>
+              </div>
+              <div class="card-footer d-flex justify-content-between">
+                <button class="btn btn-sm btn-primary view-vector-btn" data-id="${doc.id}">查看</button>
+                <button class="btn btn-sm btn-danger delete-vector-btn" data-id="${doc.id}">刪除</button>
+              </div>
+            </div>
+          `;
+          vectorsList.appendChild(card);
+        });
+
+        // 添加事件監聽器
+        document.querySelectorAll('.view-vector-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = e.target.getAttribute('data-id');
+            showVectorDetail(id, documents);
+          });
+        });
+
+        document.querySelectorAll('.delete-vector-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const id = e.target.getAttribute('data-id');
+            if (confirm(`確定要刪除 ID 為 ${id} 的向量資料嗎？`)) {
+              await deleteVector(id);
+            }
+          });
+        });
+
+        // 添加複選框事件監聽器
+        document.querySelectorAll('.vector-checkbox').forEach(checkbox => {
+          checkbox.addEventListener('change', updateBatchDeleteBtn);
+        });
+
+        // 重置全選框和批量刪除按鈕
+        selectAllVectors.checked = false;
+        updateBatchDeleteBtn();
+
+      } catch (error) {
+        console.error('加載向量資料錯誤:', error);
+        vectorsError.style.display = 'block';
+        vectorsError.textContent = `載入向量資料時發生錯誤: ${error.message}`;
+      } finally {
+        vectorsLoading.style.display = 'none';
+      }
+    }
+
+    // 顯示向量詳情
+    function showVectorDetail(id, documents) {
+      const doc = documents.find(d => d.id == id);
+      if (!doc) return;
+
+      document.getElementById('vectorDetailId').textContent = doc.id;
+      document.getElementById('vectorDetailText').textContent = doc.text;
+      document.getElementById('vectorDetailDimension').textContent = doc.vector ? doc.vector.length : '未知';
+
+      // 設置刪除按鈕的資料
+      document.getElementById('deleteVectorBtn').setAttribute('data-id', doc.id);
+
+      // 監聽刪除按鈕
+      document.getElementById('deleteVectorBtn').onclick = async () => {
+        if (confirm(`確定要刪除 ID 為 ${doc.id} 的向量資料嗎？`)) {
+          const modal = bootstrap.Modal.getInstance(document.getElementById('vectorDetailModal'));
+          modal.hide();
+          await deleteVector(doc.id);
+        }
+      };
+
+      // 顯示模態框
+      const modal = new bootstrap.Modal(document.getElementById('vectorDetailModal'));
+      modal.show();
+    }
+
+    // 刪除向量
+    async function deleteVector(id) {
+      try {
+        vectorsLoading.style.display = 'block';
+        await apiCall('/api/documents/delete/batch', 'POST', { ids: [id] });
+        alert('向量刪除成功！');
+        loadVectorsList(); // 重新加載列表
+      } catch (error) {
+        alert(`錯誤: ${error.message}`);
+      } finally {
+        vectorsLoading.style.display = 'none';
+      }
+    }
+
+    // 新增向量表單提交
+    submitAddVectorBtn.addEventListener('click', async () => {
+      const vectorText = document.getElementById('vectorText').value.trim();
+      if (!vectorText) {
+        alert('請輸入文檔內容');
+        return;
+      }
+
+      try {
+        const addVectorModal = bootstrap.Modal.getInstance(document.getElementById('addVectorModal'));
+        addVectorModal.hide();
+
+        vectorsLoading.style.display = 'block';
+
+        // 只傳送文本內容，ID 由後端生成
+        const response = await apiCall('/api/documents/insert', 'POST', {
+          text: vectorText
+        });
+
+        // 顯示成功訊息，包含後端生成的 ID
+        alert(`向量文檔新增成功！ID: ${response.id}`);
+        document.getElementById('vectorText').value = ''; // 清空表單
+        loadVectorsList(); // 重新加載列表
+      } catch (error) {
+        alert(`錯誤: ${error.message}`);
+      } finally {
+        vectorsLoading.style.display = 'none';
+      }
+    });
+
+    // 向量搜尋功能
+    submitSearchBtn.addEventListener('click', async () => {
+      const searchQuery = document.getElementById('searchQuery').value.trim();
+      const topK = parseInt(document.getElementById('topK').value);
+
+      if (!searchQuery) {
+        alert('請輸入搜尋關鍵詞');
+        return;
+      }
+
+      const searchResults = document.getElementById('searchResults');
+      const searchResultsList = document.getElementById('searchResultsList');
+      const searchLoading = document.getElementById('searchLoading');
+
+      try {
+        // 顯示載入中
+        searchResults.style.display = 'none';
+        searchLoading.style.display = 'block';
+        searchResultsList.innerHTML = '';
+
+        // 發送搜尋請求
+        const results = await apiCall('/api/documents/search', 'POST', {
+          query: searchQuery,
+          topK: topK
+        });
+
+        // 顯示結果
+        if (results.length === 0) {
+          searchResultsList.innerHTML = '<div class="alert alert-info">沒有找到相關文檔</div>';
+        } else {
+          results.forEach((result, index) => {
+            const resultItem = document.createElement('div');
+            resultItem.className = 'list-group-item';
+            resultItem.innerHTML = `
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-1">結果 #${index + 1} (ID: ${result.id})</h6>
+                <span class="badge bg-primary rounded-pill">相似度: ${(result.score * 100).toFixed(2)}%</span>
+              </div>
+              <p class="mb-1">${result.text}</p>
+            `;
+            searchResultsList.appendChild(resultItem);
+          });
+        }
+
+        // 顯示結果區域
+        searchResults.style.display = 'block';
+      } catch (error) {
+        alert(`搜尋錯誤: ${error.message}`);
+        searchResultsList.innerHTML = `<div class="alert alert-danger">搜尋失敗: ${error.message}</div>`;
+        searchResults.style.display = 'block';
+      } finally {
+        searchLoading.style.display = 'none';
+      }
+    });
+
+    // 頁面加載完成後初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      // 檢查並清理歷史記錄中的重複項
+      cleanupChatHistory();
+
+      // 使用Bootstrap的頁籤事件處理
+      const tabElements = document.querySelectorAll('button[data-bs-toggle="tab"]');
+      tabElements.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', (event) => {
+          const targetId = event.target.getAttribute('data-bs-target').replace('#', '');
+
+          // 根據不同頁籤執行初始化
+          if (targetId === 'vector-management') {
+            initializeVectorManagement();
+          } else if (targetId === 'documents') {
+            // 初始化文檔處理頁籤
+            console.log('初始化文檔處理頁籤');
+            // 可以放入文檔處理頁籤的初始化代碼
+          } else if (targetId === 'favorites') {
+            // 初始化我的最愛頁籤
+            console.log('初始化我的最愛頁籤');
+            loadFavorites();
+          } else if (targetId === 'recommendations') {
+            // 初始化推薦列表頁籤
+            console.log('初始化推薦列表頁籤');
+            // 可以放入推薦列表頁籤的初始化代碼
+          }
+        });
+      });
+
+      // 初始化當前活動的頁籤
+      const activeTab = document.querySelector('.nav-link.active');
+      if (activeTab) {
+        const activeTabId = activeTab.getAttribute('data-bs-target').replace('#', '');
+        if (activeTabId === 'vector-management') {
+          initializeVectorManagement();
+        } else if (activeTabId === 'favorites') {
+          loadFavorites();
+        }
+        // 其他頁籤的初始化可以根據需要添加
+      }
+
+      // 初始化清空收藏按鈕
+      const clearFavoritesBtn = document.getElementById('clearFavoritesBtn');
+      if (clearFavoritesBtn) {
+        clearFavoritesBtn.addEventListener('click', clearFavorites);
+      }
+
+      // 初始化歷史記錄按鈕狀態
+      updateHistoryButtonStatus();
+
+      // 監聽歷史記錄模態框事件
+      const historyModal = document.getElementById('historyModal');
+      if (historyModal) {
+        historyModal.addEventListener('show.bs.modal', function () {
+          // 先清空現有內容，避免重複顯示
+          historyList.innerHTML = '';
+          // 顯示載入中狀態
+          historyLoading.style.display = 'block';
+          noHistory.style.display = 'none';
+
+          // 稍後載入歷史記錄
+          setTimeout(() => {
+            loadChatHistory();
+          }, 100);
+        });
+      }
+    });
+
+    // 檢查並清理歷史記錄中的重複項
+    function cleanupChatHistory() {
+      let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      if (chatHistory.length === 0) return;
+
+      console.log(`檢查歷史記錄: 原始數量 ${chatHistory.length}`);
+
+      // 使用Map去除重複項，保留最新的記錄
+      const uniqueMap = new Map();
+
+      // 按時間排序，從新到舊
+      chatHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // 收集唯一鍵的最新記錄
+      chatHistory.forEach(record => {
+        // 確保記錄有必要的字段
+        if (!record.userMessage || !record.aiResponse) return;
+
+        const key = `${record.userMessage}|${record.aiResponse}`;
+        if (!uniqueMap.has(key)) {
+          uniqueMap.set(key, record);
+        }
+      });
+
+      // 轉換回陣列
+      const uniqueHistory = Array.from(uniqueMap.values());
+
+      // 如果發現有重複，則更新localStorage
+      if (uniqueHistory.length < chatHistory.length) {
+        console.log(`清理重複歷史記錄: ${chatHistory.length} -> ${uniqueHistory.length}`);
+        localStorage.setItem('chatHistory', JSON.stringify(uniqueHistory));
+        // 更新歷史按鈕狀態
+        updateHistoryButtonStatus();
+      }
+    }
+
+    // 加載收藏列表
+    function loadFavorites() {
+      const favoritesList = document.getElementById('favoritesList');
+      const noFavorites = document.getElementById('noFavorites');
+      const favoritesLoading = document.getElementById('favoritesLoading');
+
+      if (!favoritesList || !noFavorites || !favoritesLoading) {
+        console.error('找不到收藏相關元素');
+        return;
+      }
+
+      // 顯示載入中
+      favoritesList.style.display = 'none';
+      noFavorites.style.display = 'none';
+      favoritesLoading.style.display = 'block';
+
+      // 從localStorage獲取收藏
+      setTimeout(() => {
+        const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
+        // 隱藏載入中
+        favoritesLoading.style.display = 'none';
+
+        if (favorites.length === 0) {
+          // 顯示無收藏提示
+          noFavorites.style.display = 'block';
+          return;
+        }
+
+        // 清空並重新渲染收藏列表
+        favoritesList.innerHTML = '';
+        favorites.forEach(favorite => {
+          const card = document.createElement('div');
+          card.className = 'col-md-6 col-lg-4 mb-4';
+          card.innerHTML = `
+            <div class="card h-100">
+              <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">
+                  ${new Date(favorite.timestamp).toLocaleDateString()} ${new Date(favorite.timestamp).toLocaleTimeString()}
+                </h6>
+                <p class="card-text">${favorite.text}</p>
+              </div>
+              <div class="card-footer d-flex justify-content-between">
+                <button class="btn btn-sm btn-primary copy-btn" data-text="${encodeURIComponent(favorite.text)}">
+                  <i class="bi bi-clipboard"></i> 複製
+                </button>
+                <button class="btn btn-sm btn-danger remove-favorite-btn" data-id="${favorite.id}">
+                  <i class="bi bi-trash"></i> 刪除
+                </button>
+              </div>
+            </div>
+          `;
+          favoritesList.appendChild(card);
+        });
+
+        // 為複製按鈕添加事件
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const text = decodeURIComponent(e.target.closest('button').getAttribute('data-text'));
+            navigator.clipboard.writeText(text).then(() => {
+              alert('已複製到剪貼板');
+            }).catch(err => {
+              console.error('複製失敗:', err);
+              alert('複製失敗，請手動複製');
+            });
+          });
+        });
+
+        // 為刪除按鈕添加事件
+        document.querySelectorAll('.remove-favorite-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = e.target.closest('button').getAttribute('data-id');
+            removeFavoriteById(id);
+          });
+        });
+
+        favoritesList.style.display = 'flex';
+      }, 500); // 模擬載入時間
+    }
+
+    // 通過ID移除收藏
+    function removeFavoriteById(id) {
+      if (!confirm('確定要刪除這個收藏嗎？')) {
+        return;
+      }
+
+      let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+      favorites = favorites.filter(f => f.id !== id);
+      localStorage.setItem('favorites', JSON.stringify(favorites));
+
+      loadFavorites(); // 重新載入收藏列表
+    }
+
+    // 清空所有收藏
+    function clearFavorites() {
+      if (!confirm('確定要清空所有收藏嗎？此操作無法撤銷。')) {
+        return;
+      }
+
+      localStorage.removeItem('favorites');
+      loadFavorites(); // 重新載入收藏列表
+    }
+
+    // 保存聊天記錄
+    function saveChatHistory(chatRecord) {
+      // 從 localStorage 中獲取已有的聊天記錄
+      let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+
+      // 檢查是否已有相同內容的對話
+      const isDuplicate = chatHistory.some(record =>
+        record.userMessage === chatRecord.userMessage &&
+        record.aiResponse === chatRecord.aiResponse
+      );
+
+      // 如果已有相同內容，則不保存
+      if (isDuplicate) {
+        console.log('檢測到重複對話，不再保存');
+        return;
+      }
+
+      // 添加新記錄
+      chatHistory.push(chatRecord);
+
+      // 去除潛在的重複項（額外的安全措施）
+      const uniqueMap = new Map();
+      chatHistory.forEach(record => {
+        const key = `${record.userMessage}|${record.aiResponse}`;
+        // 如果已存在相同對話，則使用時間較新的那個記錄
+        if (!uniqueMap.has(key) || new Date(record.timestamp) > new Date(uniqueMap.get(key).timestamp)) {
+          uniqueMap.set(key, record);
+        }
+      });
+
+      // 轉換回陣列
+      chatHistory = Array.from(uniqueMap.values());
+
+      // 限制歷史記錄數量，保留最新的100條
+      if (chatHistory.length > 100) {
+        // 先按時間排序
+        chatHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        chatHistory = chatHistory.slice(0, 100);
+      }
+
+      // 保存到 localStorage
+      localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+
+      // 更新歷史按鈕狀態
+      updateHistoryButtonStatus();
+    }
+
+    // 更新歷史記錄按鈕狀態
+    function updateHistoryButtonStatus() {
+      const historyBtn = document.getElementById('historyBtn');
+      const chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+
+      if (chatHistory.length > 0) {
+        // 如果有歷史記錄，添加一個標記
+        historyBtn.innerHTML = `
+          <i class="bi bi-clock-history"></i> 歷史記錄
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            ${chatHistory.length}
+          </span>
+        `;
+        historyBtn.classList.add('position-relative');
+      } else {
+        historyBtn.innerHTML = `<i class="bi bi-clock-history"></i> 歷史記錄`;
+        historyBtn.classList.remove('position-relative');
+      }
+    }
+
+    // 載入聊天歷史記錄
+    function loadChatHistory() {
+      // 顯示載入中
+      historyList.innerHTML = '';
+      historyLoading.style.display = 'block';
+      noHistory.style.display = 'none';
+
+      setTimeout(() => {
+        // 從 localStorage 中獲取聊天記錄
+        let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+
+        // 隱藏載入中狀態
+        historyLoading.style.display = 'none';
+
+        if (chatHistory.length === 0) {
+          // 如果沒有歷史記錄，顯示提示訊息
+          noHistory.style.display = 'block';
+          return;
+        }
+
+        // 先按時間排序，從新到舊
+        chatHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        // 使用Map去除重複項，保留最新的記錄
+        const uniqueMap = new Map();
+
+        // 第一次迭代：收集唯一鍵的最新記錄
+        chatHistory.forEach(record => {
+          // 使用用戶問題和AI回答組合作為唯一識別符
+          const key = `${record.userMessage}|${record.aiResponse}`;
+          if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, record);
+          }
+        });
+
+        // 轉換回陣列並保持排序
+        const uniqueHistory = Array.from(uniqueMap.values());
+        uniqueHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        // 如果發現有重複，則更新localStorage
+        if (uniqueHistory.length < chatHistory.length) {
+          localStorage.setItem('chatHistory', JSON.stringify(uniqueHistory));
+          // 更新歷史按鈕狀態
+          updateHistoryButtonStatus();
+        }
+
+        // 生成歷史記錄列表
+        historyList.innerHTML = ''; // 確保清空所有內容
+        uniqueHistory.forEach(record => {
+          const item = document.createElement('div');
+          item.className = 'list-group-item history-item';
+          item.dataset.id = record.id;
+
+          const date = new Date(record.timestamp);
+          const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+
+          item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <small class="history-date text-muted">${formattedDate}</small>
+              <div>
+                <span class="badge ${record.apiType === 'rag' ? 'bg-success' : 'bg-primary'} rounded-pill">
+                  ${record.apiType === 'rag' ? 'RAG' : '一般'}
+                </span>
+                <button class="btn btn-sm btn-link text-danger p-0 ms-2 delete-history-btn" title="刪除此記錄">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+            <div class="history-message">${record.userMessage}</div>
+            <small class="text-muted">模型: ${record.model === 'gemini' ? 'Google Gemini' : 'OpenAI GPT'}</small>
+            ${record.embeddingModel && record.apiType === 'rag'
+              ? `<small class="text-muted ms-2">嵌入模型: ${record.embeddingModel === 'gemini' ? 'Google Gemini' : 'OpenAI'}</small>`
+              : ''}
+          `;
+
+          historyList.appendChild(item);
+
+          // 找到刪除按鈕並添加事件
+          const deleteBtn = item.querySelector('.delete-history-btn');
+          deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // 阻止事件冒泡，避免觸發項目點擊
+            deleteHistoryItem(record.id);
+          });
+
+          // 點擊項目載入該對話
+          item.addEventListener('click', () => {
+            loadConversation(record);
+            // 關閉模態框
+            const modal = bootstrap.Modal.getInstance(document.getElementById('historyModal'));
+            modal.hide();
+          });
+        });
+      }, 300); // 簡單延遲，模擬載入
+    }
+
+    // 刪除單個歷史記錄
+    function deleteHistoryItem(id) {
+      if (!confirm('確定要刪除這筆歷史記錄嗎？')) {
+        return;
+      }
+
+      // 從 localStorage 獲取歷史記錄
+      let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+
+      // 過濾掉要刪除的記錄
+      chatHistory = chatHistory.filter(item => item.id !== id);
+
+      // 保存回 localStorage
+      localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+
+      // 重新加載歷史記錄
+      loadChatHistory();
+
+      // 更新歷史按鈕狀態
+      updateHistoryButtonStatus();
+    }
+
+    // 載入特定對話到聊天室
+    function loadConversation(record) {
+      // 清空當前聊天
+      chatMessages.innerHTML = '';
+
+      // 添加用戶消息
+      addMessage(record.userMessage, 'user-message');
+
+      // 添加AI回應
+      addMessage(record.aiResponse, 'assistant-message');
+
+      // 設置模型選擇
+      modelSelect.value = record.model;
+
+      // 設置嵌入模型選擇（如果有）
+      const embeddingModelSelect = document.getElementById('embedding-model-select');
+      if (record.embeddingModel && embeddingModelSelect) {
+        embeddingModelSelect.value = record.embeddingModel;
+      }
+    }
+
+    // 清空聊天歷史
+    function clearChatHistory() {
+      if (confirm('確定要清空所有聊天歷史記錄嗎？此操作無法撤銷。')) {
+        localStorage.removeItem('chatHistory');
+        loadChatHistory(); // 重新載入（顯示空狀態）
+        updateHistoryButtonStatus(); // 更新按鈕狀態
+      }
+    }
+
+    // 立即執行函數確保代碼執行
+    (function () {
+      // 確保DOM加載完成
+      function initDropArea() {
+        console.log("初始化文件上傳區域");
+
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+
+        // 調試信息
+        console.log("dropArea元素:", dropArea);
+        console.log("fileInput元素:", fileInput);
+
+        if (!dropArea || !fileInput) {
+          console.error("找不到必要的上傳元素");
+          return;
+        }
+
+        // 明確設置樣式確保可點擊
+        dropArea.style.cursor = 'pointer';
+
+        // 使用傳統綁定方式而非addEventListener
+        dropArea.onclick = function (e) {
+          console.log("dropArea被點擊");
+          fileInput.click();
+          e.stopPropagation(); // 阻止事件冒泡
+        };
+
+        // 拖放事件
+        dropArea.ondragover = function (e) {
+          e.preventDefault();
+          this.style.borderColor = '#007bff';
+          this.style.backgroundColor = '#e9ecef';
+        };
+
+        dropArea.ondragleave = function () {
+          this.style.borderColor = '#ccc';
+          this.style.backgroundColor = '';
+        };
+
+        dropArea.ondrop = function (e) {
+          e.preventDefault();
+          this.style.borderColor = '#ccc';
+          this.style.backgroundColor = '';
+
+          if (e.dataTransfer.files.length > 0) {
+            // 設置文件並手動觸發change事件
+            fileInput.files = e.dataTransfer.files;
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+          }
+        };
+      }
+
+      // 使用多種方式確保初始化執行
+      // 方法1: DOMContentLoaded事件
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDropArea);
+      } else {
+        // 如果DOM已經加載完成，立即執行
+        initDropArea();
+      }
+
+      // 方法2: 頁面完全加載後再次嘗試初始化
+      window.addEventListener('load', initDropArea);
+
+      // 方法3: 延遲執行確保其他JS已完成
+      setTimeout(initDropArea, 1000);
+
+      // 方法4: 監聽頁籤變更，當相關頁籤顯示時初始化
+      const tabElement = document.getElementById('documents-tab');
+      if (tabElement) {
+        tabElement.addEventListener('shown.bs.tab', function () {
+          console.log("文檔頁籤被激活");
+          initDropArea();
+        });
+      }
+    })();
+
+    // 如果項目使用了jQuery
+    $(document).ready(function () {
+      $('#dropArea').on('click', function () {
+        $('#fileInput').click();
+      });
+    });
+
+    // 檔案選擇處理
+    let selectedFiles = []; // 存儲選擇的檔案
+
+    // 更新fileInput的change事件處理
+    fileInput.addEventListener('change', function () {
+      if (this.files.length > 0) {
+        // 將新選擇的檔案添加到已選檔案陣列中
+        Array.from(this.files).forEach(file => {
+          // 檢查檔案是否已經被選擇（避免重複）
+          const isDuplicate = selectedFiles.some(f =>
+            f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+          );
+
+          if (!isDuplicate) {
+            selectedFiles.push(file);
+          }
+        });
+
+        // 顯示選擇的檔案
+        displaySelectedFiles();
+
+        // 清空input，允許再次選擇相同檔案
+        this.value = '';
+      }
+    });
+
+    // 顯示已選擇的檔案
+    function displaySelectedFiles() {
+      const container = document.getElementById('selectedFilesContainer');
+      const filesList = document.getElementById('selectedFilesList');
+
+      if (selectedFiles.length > 0) {
+        container.style.display = 'block';
+        filesList.innerHTML = '';
+
+        selectedFiles.forEach((file, index) => {
+          const fileItem = document.createElement('li');
+          fileItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+          // 確定檔案圖標
+          let iconClass = 'bi-file-earmark';
+          const extension = file.name.split('.').pop().toLowerCase();
+
+          if (['pdf'].includes(extension)) iconClass = 'bi-file-earmark-pdf';
+          else if (['doc', 'docx'].includes(extension)) iconClass = 'bi-file-earmark-word';
+          else if (['xls', 'xlsx'].includes(extension)) iconClass = 'bi-file-earmark-excel';
+          else if (['txt'].includes(extension)) iconClass = 'bi-file-earmark-text';
+          else if (['csv'].includes(extension)) iconClass = 'bi-file-earmark-spreadsheet';
+          else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) iconClass = 'bi-file-earmark-image';
+
+          fileItem.innerHTML = `
+            <div class="file-info">
+              <i class="bi ${iconClass} me-2"></i>
+              <span class="file-name">${file.name}</span>
+              <small class="text-muted ms-2">(${formatFileSize(file.size)})</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${index}">
+              <i class="bi bi-x"></i> 移除
+            </button>
+          `;
+
+          filesList.appendChild(fileItem);
+        });
+
+        // 添加移除檔案的事件處理
+        document.querySelectorAll('.remove-file').forEach(button => {
+          button.addEventListener('click', function () {
+            const index = parseInt(this.getAttribute('data-index'));
+            selectedFiles.splice(index, 1);
+            displaySelectedFiles(); // 重新顯示檔案列表
+          });
+        });
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    // 清空所有選擇的檔案
+    document.getElementById('clearFilesBtn').addEventListener('click', function () {
+      selectedFiles = [];
+      displaySelectedFiles();
+    });
+
+    // 上傳所有選擇的檔案
+    document.getElementById('uploadSelectedBtn').addEventListener('click', function () {
+      if (selectedFiles.length === 0) {
+        alert('請先選擇檔案');
+        return;
+      }
+
+      uploadFiles(selectedFiles);
+    });
+
+    // 批次上傳檔案
+    function uploadFiles(files) {
+      // 創建進度條容器
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'mt-3';
+      progressContainer.innerHTML = `
+        <div class="card">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">上傳進度</h6>
+          </div>
+          <div class="card-body">
+            <div id="uploadProgress" class="progress mb-3">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div id="uploadStatus">準備上傳 ${files.length} 個檔案...</div>
+          </div>
+        </div>
+      `;
+
+      // 將進度條添加到頁面
+      const container = document.getElementById('selectedFilesContainer');
+      container.parentNode.insertBefore(progressContainer, container.nextSibling);
+
+      const progressBar = progressContainer.querySelector('.progress-bar');
+      const statusDiv = document.getElementById('uploadStatus');
+
+      // 逐個上傳檔案
+      let completedCount = 0;
+      let failedCount = 0;
+
+      function uploadNext(index) {
+        if (index >= files.length) {
+          // 所有檔案上傳完成
+          progressBar.style.width = '100%';
+          progressBar.className = 'progress-bar bg-success';
+          statusDiv.innerHTML = `上傳完成! 成功: ${completedCount}, 失敗: ${failedCount}`;
+
+          // 如果全部成功，清空選擇的檔案
+          if (failedCount === 0) {
+            selectedFiles = [];
+            displaySelectedFiles();
+          }
+
+          // 清空progressContainer
+          setTimeout(() => {
+            progressContainer.remove();
+          }, 3000);
+
+          return;
+        }
+
+        const file = files[index];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        statusDiv.textContent = `上傳中: ${file.name} (${index + 1}/${files.length})`;
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/uploads', true);
+
+        xhr.upload.addEventListener('progress', function (e) {
+          if (e.lengthComputable) {
+            const fileProgress = e.loaded / e.total;
+            // 計算總體進度：已完成的檔案 + 當前檔案的進度
+            const totalProgress = ((completedCount + fileProgress) / files.length) * 100;
+            progressBar.style.width = `${totalProgress}%`;
+          }
+        });
+
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              completedCount++;
+            } else {
+              failedCount++;
+              console.error(`檔案 ${file.name} 上傳失敗:`, xhr.responseText);
+              statusDiv.innerHTML += `<br><span class="text-danger">• ${file.name} 上傳失敗</span>`;
+            }
+
+            // 更新進度顯示
+            const totalProgress = (completedCount / files.length) * 100;
+            progressBar.style.width = `${totalProgress}%`;
+
+            // 上傳下一個檔案
+            uploadNext(index + 1);
+          }
+        };
+
+        xhr.send(formData);
+      }
+
+      // 開始上傳第一個檔案
+      uploadNext(0);
+    }
+  </script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+</body>
+
+</html>

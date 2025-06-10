@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>檔案上傳與管理</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .form-container {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="submit"],
+    input[type="button"] {
+      padding: 8px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    input[type="submit"]:hover,
+    input[type="button"]:hover {
+      background-color: #45a049;
+    }
+
+    .file-list {
+      margin-top: 30px;
+    }
+
+    button {
+      padding: 8px 15px;
+      background-color: #008CBA;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    button:hover {
+      background-color: #007B9E;
+    }
+
+    button.btn-process {
+      background-color: #9C27B0;
+    }
+
+    button.btn-process:hover {
+      background-color: #7B1FA2;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .btn {
+      padding: 5px 10px;
+      margin-right: 5px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .btn-download {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .btn-view {
+      background-color: #2196F3;
+      color: white;
+    }
+
+    .btn-delete {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .btn-embed {
+      background-color: #9C27B0;
+      color: white;
+    }
+
+    .btn:hover {
+      opacity: 0.8;
+    }
+
+    /* 上傳狀態樣式 */
+    .upload-status {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      background-color: #f8f9fa;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      min-width: 250px;
+    }
+
+    .upload-status p {
+      margin: 0;
+      padding: 0;
+    }
+
+    .upload-status .success {
+      color: #28a745;
+    }
+
+    .upload-status .error {
+      color: #dc3545;
+    }
+
+    /* 嵌入向量結果彈窗 */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1001;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 900px;
+      border-radius: 5px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .close {
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+    }
+
+    .embedding-section {
+      margin-top: 20px;
+    }
+
+    .embedding-section h3 {
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .embedding-preview {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: monospace;
+      overflow-x: auto;
+      margin-bottom: 10px;
+    }
+
+    .file-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .file-info-item {
+      background-color: #e9ecef;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 0.9rem;
+    }
+
+    select {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>檔案上傳與管理</h1>
+
+  <div class="form-container">
+    <h2>單一檔案上傳</h2>
+    <form id="singleUploadForm" enctype="multipart/form-data">
+      <input type="file" name="file" id="singleFile" />
+      <input type="button" value="上傳" id="singleUploadBtn" />
+    </form>
+  </div>
+
+  <div class="form-container">
+    <h2>多檔案上傳</h2>
+    <form id="multiUploadForm" enctype="multipart/form-data">
+      <input type="file" name="files" id="multiFiles" multiple />
+      <input type="button" value="上傳" id="multiUploadBtn" />
+    </form>
+  </div>
+
+  <div class="file-list">
+    <h2>檔案列表</h2>
+    <button onclick="refreshFileList()">重新整理檔案列表</button>
+    <div id="embedding-models-container" style="margin: 15px 0;">
+      <h3>可用的嵌入模型</h3>
+      <select id="embedding-model-select">
+        <option value="">選擇嵌入模型</option>
+        <!-- 模型選項會動態載入 -->
+      </select>
+      <button class="btn-process" onclick="loadEmbeddingModels()">載入可用模型</button>
+    </div>
+    <div id="files-container">
+      <table id="files-table">
+        <thead>
+          <tr>
+            <th>檔案名稱</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="files-list">
+          <!-- 檔案列表會在這裡動態生成 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 嵌入向量結果彈窗 -->
+  <div id="embeddingModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">檔案嵌入向量結果</h2>
+        <span class="close">&times;</span>
+      </div>
+      <div id="modal-body">
+        <div class="file-info" id="file-info-container">
+          <!-- 檔案信息會在這裡動態生成 -->
+        </div>
+        <div class="embedding-section">
+          <h3>嵌入資訊</h3>
+          <div id="embedding-info">
+            <!-- 嵌入向量信息會在這裡動態生成 -->
+          </div>
+        </div>
+        <div class="embedding-section">
+          <h3>檔案內容預覽</h3>
+          <div class="embedding-preview" id="content-preview">
+            <!-- 文件內容預覽會在這裡動態生成 -->
+          </div>
+        </div>
+        <div class="embedding-section">
+          <h3>嵌入向量預覽</h3>
+          <div class="embedding-preview" id="vector-preview">
+            <!-- 嵌入向量預覽會在這裡動態生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 頁面載入時獲取檔案列表
+    document.addEventListener('DOMContentLoaded', function () {
+      refreshFileList();
+      loadEmbeddingModels();
+
+      // 添加單一檔案上傳事件處理
+      document.getElementById('singleUploadBtn').addEventListener('click', function () {
+        const fileInput = document.getElementById('singleFile');
+        if (!fileInput.files[0]) {
+          alert('請選擇要上傳的檔案');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        uploadFile('http://localhost:2469/api/upload', formData);
+      });
+
+      // 添加多檔案上傳事件處理
+      document.getElementById('multiUploadBtn').addEventListener('click', function () {
+        const fileInput = document.getElementById('multiFiles');
+        if (fileInput.files.length === 0) {
+          alert('請選擇要上傳的檔案');
+          return;
+        }
+
+        const formData = new FormData();
+        for (let i = 0; i < fileInput.files.length; i++) {
+          formData.append('files', fileInput.files[i]);
+        }
+
+        uploadFile('http://localhost:2469/api/upload/multiple', formData);
+      });
+
+      // 設置彈窗關閉按鈕
+      document.querySelector('.close').addEventListener('click', function () {
+        document.getElementById('embeddingModal').style.display = 'none';
+      });
+
+      // 點擊彈窗外部關閉彈窗
+      window.addEventListener('click', function (event) {
+        if (event.target == document.getElementById('embeddingModal')) {
+          document.getElementById('embeddingModal').style.display = 'none';
+        }
+      });
+    });
+
+    // 載入嵌入模型
+    function loadEmbeddingModels() {
+      fetch('http://localhost:2469/api/embedding-models')
+        .then(response => response.json())
+        .then(data => {
+          const selectElement = document.getElementById('embedding-model-select');
+          selectElement.innerHTML = '<option value="">選擇嵌入模型</option>';
+
+          if (data && data.models) {
+            Object.entries(data.models).forEach(([key, model]) => {
+              const option = document.createElement('option');
+              option.value = model.Name;
+              option.textContent = `${model.name} - ${model.description}`;
+              selectElement.appendChild(option);
+            });
+          }
+        })
+        .catch(error => {
+          console.error('獲取嵌入模型列表時發生錯誤:', error);
+          alert('無法載入嵌入模型列表');
+        });
+    }
+
+    // 檔案上傳函數
+    function uploadFile(url, formData) {
+      // 創建上傳狀態元素
+      const uploadStatus = document.createElement('div');
+      uploadStatus.className = 'upload-status';
+      uploadStatus.innerHTML = '<p>上傳中，請稍候...</p>';
+      document.body.appendChild(uploadStatus);
+
+      fetch(url, {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+          uploadStatus.innerHTML = '<p class="success">檔案上傳成功！</p>';
+          setTimeout(() => {
+            uploadStatus.remove();
+          }, 3000);
+          refreshFileList(); // 重新整理檔案列表
+
+          // 清空檔案輸入框
+          document.getElementById('singleFile').value = '';
+          document.getElementById('multiFiles').value = '';
+        })
+        .catch(error => {
+          uploadStatus.innerHTML = `<p class="error">上傳失敗: ${error.message}</p>`;
+          setTimeout(() => {
+            uploadStatus.remove();
+          }, 5000);
+        });
+    }
+
+    // 刷新檔案列表
+    function refreshFileList() {
+      fetch('http://localhost:2469/api/list')
+        .then(response => response.json())
+        .then(data => {
+          const filesListElement = document.getElementById('files-list');
+          filesListElement.innerHTML = '';
+
+          console.log('API回傳數據:', JSON.stringify(data)); // 用於調試
+
+          if (data && data.files && data.files.length > 0) {
+            data.files.forEach(file => {
+              console.log('處理檔案:', JSON.stringify(file)); // 用於調試
+              const fileName = file.fileName; // 使用 fileName 字段
+
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${fileName}</td>
+                <td>
+                  <button class="btn btn-download" onclick="downloadFile('${fileName}')">下載</button>
+                  <button class="btn btn-view" onclick="viewFile('${fileName}')">檢視</button>
+                  <button class="btn btn-embed" onclick="processFile('${fileName}')">生成嵌入向量</button>
+                  <button class="btn btn-delete" onclick="deleteFile('${fileName}')">刪除</button>
+                </td>
+              `;
+              filesListElement.appendChild(row);
+            });
+          } else {
+            filesListElement.innerHTML = '<tr><td colspan="2">沒有檔案</td></tr>';
+          }
+        })
+        .catch(error => {
+          console.error('獲取檔案列表時發生錯誤:', error);
+          document.getElementById('files-list').innerHTML =
+            '<tr><td colspan="2">獲取檔案列表時發生錯誤</td></tr>';
+        });
+    }
+
+    // 下載檔案
+    function downloadFile(fileName) {
+      window.location.href = `http://localhost:2469/api/download/${fileName}`;
+    }
+
+    // 檢視檔案
+    function viewFile(fileName) {
+      console.log('嘗試檢視檔案:', fileName); // 調試信息
+      const url = `http://localhost:2469/api/view/${fileName}`;
+      console.log('檢視檔案URL:', url); // 調試信息
+      window.open(url, '_blank');
+    }
+
+    // 生成嵌入向量
+    function processFile(fileName) {
+      const selectedModel = document.getElementById('embedding-model-select').value;
+      let url = `http://localhost:2469/api/process/${fileName}`;
+
+      if (selectedModel) {
+        url += `?model=${selectedModel}`;
+      }
+
+      // 顯示處理中狀態
+      const processStatus = document.createElement('div');
+      processStatus.className = 'upload-status';
+      processStatus.innerHTML = '<p>處理中，請稍候...</p>';
+      document.body.appendChild(processStatus);
+
+      fetch(url, {
+        method: 'POST'
+      })
+        .then(response => response.json())
+        .then(data => {
+          processStatus.remove();
+
+          // 顯示處理結果
+          displayEmbeddingResult(data);
+        })
+        .catch(error => {
+          processStatus.innerHTML = `<p class="error">處理失敗: ${error.message}</p>`;
+          setTimeout(() => {
+            processStatus.remove();
+          }, 5000);
+        });
+    }
+
+    // 顯示嵌入向量結果
+    function displayEmbeddingResult(data) {
+      console.log('嵌入結果:', data);
+      console.log('嵌入模型:', data.embeddingModel.name);
+      // 填充檔案信息
+      const fileInfoContainer = document.getElementById('file-info-container');
+      fileInfoContainer.innerHTML = `
+        <div class="file-info-item">檔案名稱: ${data.fileName}</div>
+        <div class="file-info-item">檔案類型: ${data.fileType}</div>
+        <div class="file-info-item">使用模型: ${data.embeddingModel.name}</div>
+      `;
+
+      // 填充嵌入信息
+      const embeddingInfo = document.getElementById('embedding-info');
+      embeddingInfo.innerHTML = '';
+
+      if (data.result) {
+        const dimensionInfo = document.createElement('p');
+        dimensionInfo.textContent = `向量維度: ${data.result.dimension || '未知'}`;
+        embeddingInfo.appendChild(dimensionInfo);
+
+        if (data.result.contentSize) {
+          const sizeInfo = document.createElement('p');
+          sizeInfo.textContent = `內容大小: ${data.result.contentSize} 字元`;
+          embeddingInfo.appendChild(sizeInfo);
+        }
+      }
+
+      // 填充內容預覽
+      const contentPreview = document.getElementById('content-preview');
+      if (data.result.textPreview) {
+        contentPreview.textContent = data.result.textPreview;
+      } else if (data.result.transcription) {
+        contentPreview.textContent = data.result.transcription;
+      } else if (data.result.content) {
+        contentPreview.textContent = data.result.content;
+      } else {
+        contentPreview.textContent = '無可用的內容預覽';
+      }
+
+      // 填充向量預覽
+      const vectorPreview = document.getElementById('vector-preview');
+      if (data.result.embedding && Array.isArray(data.result.embedding)) {
+        vectorPreview.textContent = JSON.stringify(data.result.embedding, null, 2) + ' ... (僅顯示前10個元素)';
+      } else {
+        vectorPreview.textContent = '無可用的向量預覽';
+      }
+
+      // 顯示彈窗
+      document.getElementById('embeddingModal').style.display = 'block';
+    }
+
+    // 刪除檔案
+    function deleteFile(fileName) {
+      console.log('嘗試刪除檔案:', fileName); // 調試資訊
+      if (!fileName || fileName.trim() === '') {
+        alert('錯誤: 檔案名稱不能為空');
+        return;
+      }
+
+      if (confirm(`確定要刪除 ${fileName} 嗎？`)) {
+        const url = `http://localhost:2469/api/${fileName}`;
+        console.log('發送刪除請求到:', url); // 調試資訊
+
+        fetch(url, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+          .then(response => {
+            console.log('刪除回應狀態:', response.status); // 調試資訊
+            return response.json().then(data => ({ ok: response.ok, data }))
+              .catch(() => ({ ok: response.ok, data: {} }));
+          })
+          .then(({ ok, data }) => {
+            if (ok) {
+              console.log('刪除成功:', data);
+              alert('檔案刪除成功');
+              refreshFileList();
+            } else {
+              console.error('刪除失敗:', data);
+              alert(`檔案刪除失敗: ${data.error || '未知錯誤'}`);
+            }
+          })
+          .catch(error => {
+            console.error('刪除檔案時發生錯誤:', error);
+            alert('刪除檔案時發生錯誤');
+          });
+      }
+    }
+  </script>
+</body>
+
+</html>
