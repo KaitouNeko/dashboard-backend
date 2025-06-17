@@ -7,9 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 )
+
+type WatsonxResponse struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+}
 
 type WatsonxClient struct {
 }
@@ -98,7 +107,7 @@ func (p *WatsonxProvider) GetWatsonxToken() error {
 func (p *WatsonxProvider) GenerateContent(ctx context.Context, prompt string) (string, error) {
 	p.GetWatsonxToken()
 
-	url := "https://jp-tok.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29"
+	url := "https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29"
 	// accessToken := "eyJraWQiOiIyMDE5MDcyNCIsImFsZyI6IlJTMjU2In0.eyJpYW1faWQiOiJJQk1pZC02OTYwMDBONVVHIiwiaWQiOiJJQk1pZC02OTYwMDBONVVHIiwicmVhbG1pZCI6IklCTWlkIiwianRpIjoiM2IzN2M2MjUtOGNjNy00ZGZkLTkxZWEtNzEyODI3N2I0ZDM4IiwiaWRlbnRpZmllciI6IjY5NjAwME41VUciLCJnaXZlbl9uYW1lIjoiY2lvdSIsImZhbWlseV9uYW1lIjoia2lraSIsIm5hbWUiOiJjaW91IGtpa2kiLCJlbWFpbCI6Imtpa2kuY2lvdUBjbG91ZC1pbnRlcmFjdGl2ZS5jb20iLCJzdWIiOiJraWtpLmNpb3VAY2xvdWQtaW50ZXJhY3RpdmUuY29tIiwiYXV0aG4iOnsic3ViIjoia2lraS5jaW91QGNsb3VkLWludGVyYWN0aXZlLmNvbSIsImlhbV9pZCI6IklCTWlkLTY5NjAwME41VUciLCJuYW1lIjoiY2lvdSBraWtpIiwiZ2l2ZW5fbmFtZSI6ImNpb3UiLCJmYW1pbHlfbmFtZSI6Imtpa2kiLCJlbWFpbCI6Imtpa2kuY2lvdUBjbG91ZC1pbnRlcmFjdGl2ZS5jb20ifSwiYWNjb3VudCI6eyJ2YWxpZCI6dHJ1ZSwiYnNzIjoiNTQwOGM1NTM0Zjk3NDFmNDllZWY4MTNjNDdhNDhiNWYiLCJpbXNfdXNlcl9pZCI6IjEzODA2NjgxIiwiZnJvemVuIjp0cnVlLCJpc19lbnRlcnByaXNlX2FjY291bnQiOmZhbHNlLCJlbnRlcnByaXNlX2lkIjoiZWU1NzVjNTc3ODc2NGQ0MDkxNTVhYTM1NzgwZWM4ZDEiLCJpbXMiOiIyODE0NTI3In0sIm1mYSI6eyJpbXMiOnRydWV9LCJpYXQiOjE3NTAwOTYwMTgsImV4cCI6MTc1MDA5OTYxOCwiaXNzIjoiaHR0cHM6Ly9pYW0uY2xvdWQuaWJtLmNvbS9pZGVudGl0eSIsImdyYW50X3R5cGUiOiJ1cm46aWJtOnBhcmFtczpvYXV0aDpncmFudC10eXBlOmFwaWtleSIsInNjb3BlIjoiaWJtIG9wZW5pZCIsImNsaWVudF9pZCI6ImRlZmF1bHQiLCJhY3IiOjEsImFtciI6WyJwd2QiXX0.kGsi-L-A4-7YvVRJ5LNXi6C5il3OJdzD83dNjSWVAJQ_zMgr8Mmqps_wVDaR1ZJ-h4_udkX30h9Yjgg1Pr1A8TdmhJO29kx0kbIO93FjUj6cmrk29SC84bBeVzdE44qCgE0_rBjbNVCOxA3Ziuch-hs_miUGfD69nx9VXq6Uz2UrCDPhXVgcmJei5bHDuPo32pGhAq0UQ5qv-a6VStB57EBbTvL7l12mN2BprBRtqFKlMoiyKyzVV0ncLvW8RKUVrDMn9MqHp3Hq4LpSwnX9gPn97hqBGVb9SMrq8PGSXpRp5x9uk89fSRe8YF8hsf1gIO5q1mQGPOrLWNIRNzL6ZQ"
 
 	headers := map[string]string{
@@ -168,10 +177,19 @@ func (p *WatsonxProvider) GenerateContent(ctx context.Context, prompt string) (s
 
 	// Read response
 	body, err := io.ReadAll(resp.Body)
-	strBody := string(body)
+	// fmt.Println("body", body)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response: %v", err)
 	}
+
+	var res WatsonxResponse
+	err = json.Unmarshal(body, &res)
+	if err != nil {
+		log.Fatalf("JSON 解析錯誤: %v", err)
+	}
+
+	strBody := res.Choices[0].Message.Content
+	// fmt.Println("回應內容:", strBody)
 
 	return strBody, nil
 }
