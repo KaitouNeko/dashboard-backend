@@ -1,6 +1,7 @@
 package uploads
 
 import (
+	llmtype "ai-workshop/internal/constants"
 	"ai-workshop/internal/llm"
 	"fmt"
 	"os"
@@ -49,17 +50,17 @@ func (p *EmbeddingProcessor) processTextFile(filePath string, modelName string) 
 	textContent := string(content)
 
 	// 選擇合適的嵌入模型
-	var embeddingType llm.EmbeddingType
+	var embeddingType llmtype.EmbeddingType
 	switch modelName {
 	case "text-embedding-3-small":
-		embeddingType = llm.EmbeddingTypeOpenAI3Small
+		embeddingType = llmtype.EmbeddingTypeOpenAI3Small
 	case "text-embedding-3-large":
-		embeddingType = llm.EmbeddingTypeOpenAI3Large
+		embeddingType = llmtype.EmbeddingTypeOpenAI3Large
 	case "text-embedding-ada-002":
-		embeddingType = llm.EmbeddingTypeOpenAI
+		embeddingType = llmtype.EmbeddingTypeOpenAI
 	default:
 		// 預設使用 OpenAI 的 3-small 模型
-		embeddingType = llm.EmbeddingTypeOpenAI3Small
+		embeddingType = llmtype.EmbeddingTypeOpenAI3Small
 	}
 
 	// 產生嵌入向量
@@ -120,13 +121,13 @@ func (p *EmbeddingProcessor) processAudioFile(filePath string, modelName string)
 	transcription := fmt.Sprintf("這是從音訊檔案 %s 生成的模擬轉錄文字。實際應用中，此處應為 Whisper API 的轉錄結果。", filepath.Base(filePath))
 
 	// 使用轉錄文本生成嵌入向量
-	embedding, err := p.openAIProvider.CreateEmbeddingWith(llm.EmbeddingTypeOpenAI3Small, transcription)
+	embedding, err := p.openAIProvider.CreateEmbeddingWith(llmtype.EmbeddingTypeOpenAI3Small, transcription)
 	if err != nil {
 		return nil, fmt.Errorf("生成嵌入向量失敗：%v", err)
 	}
 
 	// 獲取模型維度
-	dimension, _ := p.openAIProvider.GetDimensionFor(llm.EmbeddingTypeOpenAI3Small)
+	dimension, _ := p.openAIProvider.GetDimensionFor(llmtype.EmbeddingTypeOpenAI3Small)
 
 	// 返回結果
 	result := map[string]interface{}{
@@ -203,13 +204,13 @@ func (p *EmbeddingProcessor) processDocumentFile(filePath string, modelName stri
 		filepath.Base(filePath), ext)
 
 	// 使用文本生成嵌入向量
-	embedding, err := p.openAIProvider.CreateEmbeddingWith(llm.EmbeddingTypeOpenAI3Small, extractedText)
+	embedding, err := p.openAIProvider.CreateEmbeddingWith(llmtype.EmbeddingTypeOpenAI3Small, extractedText)
 	if err != nil {
 		return nil, fmt.Errorf("生成嵌入向量失敗：%v", err)
 	}
 
 	// 獲取模型維度
-	dimension, _ := p.openAIProvider.GetDimensionFor(llm.EmbeddingTypeOpenAI3Small)
+	dimension, _ := p.openAIProvider.GetDimensionFor(llmtype.EmbeddingTypeOpenAI3Small)
 
 	// 返回結果
 	result := map[string]interface{}{

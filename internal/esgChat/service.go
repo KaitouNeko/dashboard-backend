@@ -1,4 +1,4 @@
-package chat
+package esgchat
 
 import (
 	"context"
@@ -8,14 +8,14 @@ import (
 	"ai-workshop/internal/config"
 	llmtype "ai-workshop/internal/constants"
 	"ai-workshop/internal/documents"
-	"ai-workshop/internal/llm"
+	"ai-workshop/internal/esgllm"
 )
 
 // Service 是 RAG 服務的實現
 type Service struct {
 	docService       *documents.Service
-	embeddingService *llm.OpenAIProvider
-	llmFactory       *llm.Factory
+	embeddingService *esgllm.OpenAIProvider
+	llmFactory       *esgllm.Factory
 }
 
 // NewService 創建一個新的 RAG 服務
@@ -24,10 +24,10 @@ func NewService(config *config.Config) (*Service, error) {
 	docService := documents.NewService(config)
 
 	// 創建嵌入服務
-	embeddingService := llm.NewOpenAiProvider(config.OpenAiAPIKey)
+	embeddingService := esgllm.NewOpenAiProvider(config.OpenAiAPIKey)
 
 	// 創建 LLM 工廠
-	llmFactory := llm.NewFactory(config)
+	llmFactory := esgllm.NewFactory(config)
 
 	return &Service{
 		docService:       docService,

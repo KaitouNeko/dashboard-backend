@@ -1,11 +1,12 @@
-package chat
+package esgchat
 
 import (
+	"fmt"
 	"net/http"
 
 	"ai-workshop/internal/config"
 	llmtype "ai-workshop/internal/constants"
-	"ai-workshop/internal/llm"
+	"ai-workshop/internal/esgllm"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,24 +20,32 @@ type RAGResponse struct {
 }
 
 type Handler struct {
-	client  llm.LLMProvider
-	service *Service
+	openAiClient  esgllm.LLMProvider
+	geminiClient  esgllm.LLMProvider
+	watsonxClient esgllm.LLMProvider
+	service       *Service
 }
 
-func NewHandler(service *Service, llmType llmtype.LLMType, config *config.Config) *Handler {
+func NewHandler(service *Service, config *config.Config) *Handler {
 
-	factory := llm.NewFactory(config)
+	factory := esgllm.NewFactory(config)
 
-	client, _ := factory.Create(llmType)
+	// client, _ := factory.Create(llmType)
+	openAiClient := factory.CreateOpenAi()
+	geminiClient, _ := factory.CreateGemini()
+	watsonxClient, _ := factory.CreateWatsonx()
 
 	return &Handler{
-		client:  client,
-		service: service,
+		openAiClient:  openAiClient,
+		geminiClient:  geminiClient,
+		watsonxClient: watsonxClient,
+		service:       service,
 	}
 }
 
 // HandleChat handles chat requests
 func (h *Handler) ChatHandler(c *gin.Context) {
+	fmt.Println("ChatHandler")
 	var req struct {
 		Message string          `json:"message" binding:"required"`
 		Model   llmtype.LLMType `json:"model,omitempty"`
@@ -46,13 +55,25 @@ func (h *Handler) ChatHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "無效的請求格式"})
 		return
 	}
+	fmt.Println("req.Model:", req.Model)
+	var response string
+	var err error
 
-	// 如果没有指定模型，默認使用 Gemini
 	if req.Model == "" {
-		req.Model = llmtype.LLMTypeGemini
+		req.Model = llmtype.LLMTypeGemini // 默認使用 Gemini 模型
 	}
+	// 如果没有指定模型，默認使用 Gemini
+	if req.Model == llmtype.LLMTypeGemini {
+		response, err = h.geminiClient.GenerateContent(c.Request.Context(), req.Message)
+	} else if req.Model == llmtype.LLMTypeOpenAI {
+		response, err = h.openAiClient.GenerateContent(c.Request.Context(), req.Message)
+	} else if req.Model == llmtype.LLMTypeWatsonx {
+		response, err = h.watsonxClient.GenerateContent(c.Request.Context(), req.Message)
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "不支援的模型類型"})
+		return
 
-	response, err := h.client.GenerateContent(c.Request.Context(), req.Message)
+	}
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成回應失敗: " + err.Error()})

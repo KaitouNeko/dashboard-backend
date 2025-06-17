@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"ai-workshop/internal/config"
+	llmtype "ai-workshop/internal/constants"
 	"ai-workshop/internal/llm"
 	"ai-workshop/internal/milvus"
 
@@ -48,9 +49,9 @@ func (s *Service) ListCollections() ([]string, error) {
 // CreateDocumentCollection 創建文件集合
 func (s *Service) CreateDocumentCollection() error {
 	// 獲取默認嵌入維度
-	dimension, err := s.embeddingClient.GetDimensionFor(llm.EmbeddingTypeOpenAI)
+	dimension, err := s.embeddingClient.GetDimensionFor(llmtype.EmbeddingTypeOpenAI)
 	if err != nil {
-		dimension = llm.OpenAIModelDimension // 使用默認值
+		dimension = llmtype.OpenAIModelDimension // 使用默認值
 	}
 
 	err = s.milvusClient.CreateCollection(CollectionName, dimension)
@@ -64,11 +65,11 @@ func (s *Service) CreateDocumentCollection() error {
 func (s *Service) InsertDocument(text string) (string, error) {
 	// 使用 UUID 生成唯一 ID
 	id := uuid.New().String()
-	return id, s.InsertDocumentWithID(id, text, llm.EmbeddingTypeOpenAI)
+	return id, s.InsertDocumentWithID(id, text, llmtype.EmbeddingTypeOpenAI)
 }
 
 // InsertDocumentWithID 使用指定 ID 插入單個文件（內部使用）
-func (s *Service) InsertDocumentWithID(id string, text string, embeddingType llm.EmbeddingType) error {
+func (s *Service) InsertDocumentWithID(id string, text string, embeddingType llmtype.EmbeddingType) error {
 	// 1. 生成文本的嵌入向量
 	vector, err := s.embeddingClient.CreateEmbeddingWith(embeddingType, text)
 	if err != nil {
@@ -105,11 +106,11 @@ func (s *Service) InsertDocumentWithID(id string, text string, embeddingType llm
 
 // InsertBatchDocuments 批量插入文件（使用默認嵌入提供者）
 func (s *Service) InsertBatchDocuments(documents []Document) error {
-	return s.InsertBatchDocumentsWithEmbedding(documents, llm.EmbeddingTypeOpenAI)
+	return s.InsertBatchDocumentsWithEmbedding(documents, llmtype.EmbeddingTypeOpenAI)
 }
 
 // InsertBatchDocumentsWithEmbedding 使用指定嵌入提供者批量插入文件
-func (s *Service) InsertBatchDocumentsWithEmbedding(documents []Document, embeddingType llm.EmbeddingType) error {
+func (s *Service) InsertBatchDocumentsWithEmbedding(documents []Document, embeddingType llmtype.EmbeddingType) error {
 	texts := make([]string, len(documents))
 	for i, doc := range documents {
 		texts[i] = doc.Text
@@ -151,11 +152,11 @@ func (s *Service) InsertBatchDocumentsWithEmbedding(documents []Document, embedd
 
 // ListVectors 列出所有文件（使用默認嵌入提供者）
 func (s *Service) ListVectors() ([]Document, error) {
-	return s.ListVectorsWithEmbedding(llm.EmbeddingTypeOpenAI)
+	return s.ListVectorsWithEmbedding(llmtype.EmbeddingTypeOpenAI)
 }
 
 // ListVectorsWithEmbedding 使用指定嵌入提供者列出所有文件
-func (s *Service) ListVectorsWithEmbedding(embeddingType llm.EmbeddingType) ([]Document, error) {
+func (s *Service) ListVectorsWithEmbedding(embeddingType llmtype.EmbeddingType) ([]Document, error) {
 	collectionName := getCollectionName(embeddingType)
 	vectors, err := s.milvusClient.ListVectors(collectionName)
 	log.Printf("ListVectors vectors: %v", vectors)
@@ -208,11 +209,11 @@ func (s *Service) ListVectorsWithEmbedding(embeddingType llm.EmbeddingType) ([]D
 
 // DeleteDocument 刪除文件（使用默認嵌入提供者）
 func (s *Service) DeleteDocument(id string) error {
-	return s.DeleteDocumentWithEmbedding(id, llm.EmbeddingTypeOpenAI)
+	return s.DeleteDocumentWithEmbedding(id, llmtype.EmbeddingTypeOpenAI)
 }
 
 // DeleteDocumentWithEmbedding 使用指定嵌入提供者刪除文件
-func (s *Service) DeleteDocumentWithEmbedding(id string, embeddingType llm.EmbeddingType) error {
+func (s *Service) DeleteDocumentWithEmbedding(id string, embeddingType llmtype.EmbeddingType) error {
 	ids := []string{id}
 	collectionName := getCollectionName(embeddingType)
 	err := s.milvusClient.DeleteVectors(collectionName, ids)
@@ -224,11 +225,11 @@ func (s *Service) DeleteDocumentWithEmbedding(id string, embeddingType llm.Embed
 
 // DeleteDocuments 批量刪除文件（使用默認嵌入提供者）
 func (s *Service) DeleteDocuments(ids []string) error {
-	return s.DeleteDocumentsWithEmbedding(ids, llm.EmbeddingTypeOpenAI)
+	return s.DeleteDocumentsWithEmbedding(ids, llmtype.EmbeddingTypeOpenAI)
 }
 
 // DeleteDocumentsWithEmbedding 使用指定嵌入提供者批量刪除文件
-func (s *Service) DeleteDocumentsWithEmbedding(ids []string, embeddingType llm.EmbeddingType) error {
+func (s *Service) DeleteDocumentsWithEmbedding(ids []string, embeddingType llmtype.EmbeddingType) error {
 	collectionName := getCollectionName(embeddingType)
 	err := s.milvusClient.DeleteVectors(collectionName, ids)
 	if err != nil {
@@ -239,11 +240,11 @@ func (s *Service) DeleteDocumentsWithEmbedding(ids []string, embeddingType llm.E
 
 // DeleteCollection 刪除整個文件集合（使用默認嵌入提供者）
 func (s *Service) DeleteCollection() error {
-	return s.DeleteCollectionWithEmbedding(llm.EmbeddingTypeOpenAI)
+	return s.DeleteCollectionWithEmbedding(llmtype.EmbeddingTypeOpenAI)
 }
 
 // DeleteCollectionWithEmbedding 使用指定嵌入提供者刪除整個文件集合
-func (s *Service) DeleteCollectionWithEmbedding(embeddingType llm.EmbeddingType) error {
+func (s *Service) DeleteCollectionWithEmbedding(embeddingType llmtype.EmbeddingType) error {
 	collectionName := getCollectionName(embeddingType)
 	err := s.milvusClient.DeleteCollection(collectionName)
 	if err != nil {
@@ -255,11 +256,11 @@ func (s *Service) DeleteCollectionWithEmbedding(embeddingType llm.EmbeddingType)
 // SearchSimilarDocuments 搜尋相似文檔（使用默認嵌入提供者）
 func (s *Service) SearchSimilarDocuments(query string, topK int) ([]Document, error) {
 	// 使用默認嵌入提供者
-	return s.SearchSimilarDocumentsWithEmbedding(query, topK, llm.EmbeddingTypeOpenAI)
+	return s.SearchSimilarDocumentsWithEmbedding(query, topK, llmtype.EmbeddingTypeOpenAI)
 }
 
 // SearchSimilarDocumentsWithEmbedding 使用指定嵌入提供者搜尋相似文檔
-func (s *Service) SearchSimilarDocumentsWithEmbedding(query string, topK int, embeddingType llm.EmbeddingType) ([]Document, error) {
+func (s *Service) SearchSimilarDocumentsWithEmbedding(query string, topK int, embeddingType llmtype.EmbeddingType) ([]Document, error) {
 	// 1. 生成查詢文本的嵌入向量
 	queryVector, err := s.embeddingClient.CreateEmbeddingWith(embeddingType, query)
 	if err != nil {
@@ -326,7 +327,7 @@ func (s *Service) SearchSimilarDocumentsWithEmbedding(query string, topK int, em
 }
 
 // 確保集合存在並有正確的維度
-func (s *Service) ensureCollectionWithDimension(dimension int, embeddingType llm.EmbeddingType) error {
+func (s *Service) ensureCollectionWithDimension(dimension int, embeddingType llmtype.EmbeddingType) error {
 	collectionName := getCollectionName(embeddingType)
 
 	// 檢查集合是否存在
@@ -348,15 +349,15 @@ func (s *Service) ensureCollectionWithDimension(dimension int, embeddingType llm
 }
 
 // 根據嵌入類型獲取集合名稱
-func getCollectionName(embeddingType llm.EmbeddingType) string {
+func getCollectionName(embeddingType llmtype.EmbeddingType) string {
 	switch embeddingType {
-	case llm.EmbeddingTypeGemini:
+	case llmtype.EmbeddingTypeGemini:
 		return CollectionName + "_gemini"
-	case llm.EmbeddingTypeOpenAI:
+	case llmtype.EmbeddingTypeOpenAI:
 		return CollectionName
-	case llm.EmbeddingTypeOpenAI3Small:
+	case llmtype.EmbeddingTypeOpenAI3Small:
 		return CollectionName + "_openai3small"
-	case llm.EmbeddingTypeOpenAI3Large:
+	case llmtype.EmbeddingTypeOpenAI3Large:
 		return CollectionName + "_openai3large"
 	default:
 		return CollectionName

@@ -13,8 +13,9 @@ import (
 
 type Config struct {
 	// llm api keys
-	GeminiAPIKey string
-	OpenAiAPIKey string
+	GeminiAPIKey  string
+	OpenAiAPIKey  string
+	WatsonxAPIKey string
 
 	// vector db config
 	MilvusHost     string
@@ -67,12 +68,17 @@ func (c *Config) LoadConfig() error {
 	// -- llm keys --
 	c.GeminiAPIKey = util.GetEnvString("GEMINI_API_KEY", "")
 	c.OpenAiAPIKey = util.GetEnvString("OPENAI_API_KEY", "")
+	c.WatsonxAPIKey = util.GetEnvString("WATSONX_API_KEY", "")
 
 	fmt.Printf("env: %s\n", c.OpenAiAPIKey)
 	fmt.Printf("env: %s\n", c.GeminiAPIKey)
+	fmt.Printf("env: %s\n", c.WatsonxAPIKey)
 
 	if c.GeminiAPIKey == "" {
 		log.Fatal("GEMINI_API_KEY 環境變量未設置")
+	}
+	if c.WatsonxAPIKey == "" {
+		log.Fatal("WATSONX_API_KEY 環境變量未設置")
 	}
 	if c.OpenAiAPIKey == "" {
 		log.Fatal("OPENAI_API_KEY 環境變量未設置")

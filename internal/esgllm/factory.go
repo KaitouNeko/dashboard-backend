@@ -1,4 +1,4 @@
-package llm
+package esgllm
 
 import (
 	"ai-workshop/internal/config"
@@ -24,6 +24,24 @@ func NewFactory(config *config.Config) *Factory {
 	return &Factory{
 		config: config,
 	}
+}
+
+func (f *Factory) CreateOpenAi() LLMProvider {
+	provider := NewOpenAiProvider(f.config.OpenAiAPIKey)
+	return provider
+}
+
+func (f *Factory) CreateGemini() (LLMProvider, error) {
+	provider, err := NewGeminiProvider(f.config.GeminiAPIKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Gemini provider: %v", err)
+	}
+	return provider, nil
+}
+
+func (f *Factory) CreateWatsonx() (LLMProvider, error) {
+	provider := NewWatsonxProvider(f.config.WatsonxAPIKey)
+	return provider, nil
 }
 
 // a factory that generates LLM creators

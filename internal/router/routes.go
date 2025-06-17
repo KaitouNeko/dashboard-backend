@@ -4,9 +4,10 @@ import (
 	"ai-workshop/internal/auth"
 	"ai-workshop/internal/chat"
 	"ai-workshop/internal/config"
+	llmtype "ai-workshop/internal/constants"
 	"ai-workshop/internal/documents"
 	"ai-workshop/internal/energy"
-	"ai-workshop/internal/llm"
+	esgchat "ai-workshop/internal/esgChat"
 	"ai-workshop/internal/uploads"
 	"ai-workshop/internal/user"
 	"fmt"
@@ -18,7 +19,7 @@ import (
 
 // choose ai model
 const (
-	aiModel = llm.LLMTypeOpenAI
+	aiModel = llmtype.LLMTypeOpenAI // llm.LLMTypeGemini or llm.LLMTypeOpenAI
 )
 
 func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
@@ -57,6 +58,16 @@ func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
 	// -- routes --
 	api.POST("/chat", chatHandler.ChatHandler)
 	api.POST("/rag", chatHandler.RagChatHandler)
+
+	// --- ESG Chat ---
+	esgRoutes := api.Group("/esg")
+	esgChatService, err := esgchat.NewService(config)
+	if err != nil {
+		fmt.Printf("error when initiating chat handler: %v\n", err)
+	}
+	esgChatHandler := esgchat.NewHandler(esgChatService, config)
+
+	esgRoutes.POST("/chat", esgChatHandler.ChatHandler)
 
 	// --- Documents ---
 

@@ -1,4 +1,4 @@
-package llm
+package esgllm
 
 import (
 	llmtype "ai-workshop/internal/constants"
@@ -35,6 +35,10 @@ func (p *OpenAIProvider) GenerateContent(ctx context.Context, prompt string) (st
 	req := openai.ChatCompletionRequest{
 		Model: openai.GPT4o,
 		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: "你是一個擅長處理ESG指標的助手，請根據用戶的問題提供準確和有用的回答。",
+			},
 			{
 				Role:    openai.ChatMessageRoleUser,
 				Content: prompt,
