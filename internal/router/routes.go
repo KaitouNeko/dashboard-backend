@@ -69,6 +69,12 @@ func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
 	api.POST("/chat", chatHandler.ChatHandler)
 	api.POST("/rag", chatHandler.RagChatHandler)
 
+	// Session management routes
+	sessionRoutes := api.Group("/sessions")
+	sessionRoutes.GET("", chatHandler.GetAllSessions)
+	sessionRoutes.GET("/:sessionId", chatHandler.GetSessionInfo)
+	sessionRoutes.DELETE("/:sessionId", chatHandler.DeleteSession)
+
 	// --- ESG Chat ---
 	esgRoutes := api.Group("/esg")
 	esgChatService, err := esgchat.NewService(config)
