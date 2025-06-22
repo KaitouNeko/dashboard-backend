@@ -308,3 +308,4 @@ volumes/minio/
 # Air-built Go binary
 tmp/*
 
+main
