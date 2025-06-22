@@ -11,6 +11,7 @@ import (
 	"ai-workshop/internal/uploads"
 	"ai-workshop/internal/user"
 	"fmt"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -33,13 +34,14 @@ func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
 	// TODO: remove in production
 	routes.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"http://localhost:3333", // 本地測試用
-			"https://dashboard-frontend-git-develop-kaitounekos-projects.vercel.app", // Vercel 正式環境
+			"http://localhost:3333",
+			"https://dashboard-frontend-git-develop-kaitounekos-projects.vercel.app",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
+		MaxAge:           12 * time.Hour, // 加入 preflight 快取時間
 	}))
 
 	// 設置靜態文件服務
@@ -49,7 +51,11 @@ func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
 
 	// base route
 	api := routes.Group("/api")
-
+	api.GET("/version", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"version": "v0.0.1",
+		})
+	})
 	// --- Chat ---
 
 	// -- setup --
