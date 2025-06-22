@@ -29,9 +29,13 @@ func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
 	routes := gin.Default()
 
 	// 配置 CORS
+
 	// TODO: remove in production
 	routes.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3333"},
+		AllowOrigins: []string{
+			"http://localhost:3333", // 本地測試用
+			"https://dashboard-frontend-git-develop-kaitounekos-projects.vercel.app", // Vercel 正式環境
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
