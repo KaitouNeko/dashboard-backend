@@ -11,7 +11,8 @@ DB_URL = postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?s
 # Migrate commands
 .PHONY: migrate-create migrate-up migrate-down migrate-version migrate-force
 
-build:
+# for droplet
+build-droplet:
 	@echo "Building the Go application..."
 	GOOS=linux GOARCH=amd64 go build -o main ./cmd
 # Create a new migration
