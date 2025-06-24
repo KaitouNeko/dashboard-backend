@@ -83,7 +83,17 @@ func buildRAGPrompt(query string, docs []documents.Document) string {
 	var sb strings.Builder
 
 	// 添加系統指令
-	sb.WriteString("你是一個智能助手。請基於以下提供的上下文資料來回答用戶的問題。如果無法從上下文中找到答案，請誠實地說明你不知道，不要編造答案。\n\n")
+	sb.WriteString("你是一個優秀的智能助手，專精於提供精準的推薦清單。請基於以下提供的上下文資料來回答用戶的問題。\n\n")
+	sb.WriteString("**回答格式要求：**\n")
+	sb.WriteString("1. 優先列出「推薦清單」（如果資料中有相關產品/項目）\n")
+	sb.WriteString("2. 在清單後明確說明「推薦依據」（例如：評分最高、銷量最佳、客戶喜好、價格優勢等）\n")
+	sb.WriteString("3. 如果上下文資料不足以提供完整清單，才詢問用戶更多偏好來協助推薦\n")
+	sb.WriteString("4. 每個推薦項目應包含名稱和簡短說明\n")
+	sb.WriteString("5. 如果無法從上下文中找到相關答案，請誠實地說明你不知道，不要編造答案\n\n")
+	sb.WriteString("**特殊處理規則：**\n")
+	sb.WriteString("- 如果問題涉及「進銷存」、「庫存」、「產品管理」、「商品」等相關內容，請務必使用 Product ID 來關聯和整理資料\n")
+	sb.WriteString("- 進銷存相關回答應包含：Product ID、產品名稱、庫存狀況、價格等關鍵資訊\n")
+	sb.WriteString("- 按 Product ID 順序或相關性排列清單\n\n")
 
 	// 添加上下文（相關文檔）
 	sb.WriteString("### 上下文資料：\n")
