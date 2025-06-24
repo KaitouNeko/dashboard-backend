@@ -1,5 +1,21 @@
 version: "3.9"
 services:
+  app:
+    build: .
+    container_name: dashboard-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - standalone
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=ai_poc_db
+      - MILVUS_URL=http://standalone:19530
+
   db:
     image: postgres:latest
     container_name: ai_poc_db

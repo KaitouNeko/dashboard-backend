@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -21,8 +22,14 @@ type ClientConfig struct {
 
 func NewClient(config *ClientConfig) *Client {
 	if config == nil {
+		// 從環境變數讀取 Milvus URL，如果沒有設定則使用默認值
+		baseURL := os.Getenv("MILVUS_URL")
+		if baseURL == "" {
+			baseURL = "http://standalone:19530"
+		}
+
 		config = &ClientConfig{
-			BaseURL: "http://localhost:19530",
+			BaseURL: baseURL,
 			Timeout: 10 * time.Second,
 		}
 	}
