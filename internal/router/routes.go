@@ -3,6 +3,7 @@ package router
 import (
 	"ai-workshop/internal/auth"
 	"ai-workshop/internal/chat"
+	clerkauth "ai-workshop/internal/clerkAuth"
 	"ai-workshop/internal/config"
 	llmtype "ai-workshop/internal/constants"
 	"ai-workshop/internal/documents"
@@ -160,6 +161,15 @@ func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
 	protectedUserRoutes.POST("/signup", userHandler.CreateUserHandler)
 	protectedUserRoutes.POST("/update-password", userHandler.UpdatePasswordUserHandler)
 	protectedUserRoutes.POST("/update-info", userHandler.UpdateInfoUserHandler)
+
+	// Clerk Routes
+	clerkService := clerkauth.NewService()
+	clerkHandler := clerkauth.NewHandler(clerkService)
+
+	// Legacy Clerk routes (保持向後兼容)
+	ClerkRoutes := api.Group("/clerk")
+	ClerkRoutes.Use(clerkHandler.VerifyTokenMiddleware())
+	ClerkRoutes.GET("/verify-token", clerkHandler.VerifyToken)
 
 	return routes
 }
