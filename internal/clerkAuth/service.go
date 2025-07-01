@@ -12,48 +12,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// ClerkTokenResponse represents the response from Clerk token verification
-type ClerkTokenResponse struct {
-	Object           string   `json:"object"`
-	ID               string   `json:"id"`
-	ClientID         string   `json:"client_id"`
-	Subject          string   `json:"subject"`
-	Scopes           []string `json:"scopes"`
-	Revoked          bool     `json:"revoked"`
-	RevocationReason string   `json:"revocation_reason,omitempty"`
-	Expired          bool     `json:"expired"`
-	Expiration       int64    `json:"expiration"`
-	CreatedAt        int64    `json:"created_at"`
-	UpdatedAt        int64    `json:"updated_at"`
-}
-
-// SessionTokenClaims represents claims from Clerk JWT session token
-type SessionTokenClaims struct {
-	Sub string `json:"sub"` // User ID
-	Iss string `json:"iss"` // Issuer
-	Aud string `json:"aud"` // Audience
-	Azp string `json:"azp"` // Authorized party
-	Sid string `json:"sid"` // Session ID
-	Exp int64  `json:"exp"` // Expiration time
-	Iat int64  `json:"iat"` // Issued at
-	Nbf int64  `json:"nbf"` // Not before
-	jwt.RegisteredClaims
-}
-
-// ClerkTokenRequest represents the request payload for token verification
-type ClerkTokenRequest struct {
-	AccessToken string `json:"access_token"`
-}
-
-// ClerkErrorResponse represents error response from Clerk API
-type ClerkErrorResponse struct {
-	Errors []struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	} `json:"errors"`
-	ClerkTraceID string `json:"clerk_trace_id,omitempty"`
-}
-
 // JWKS represents JSON Web Key Set
 type JWKS struct {
 	Keys []JWK `json:"keys"`
