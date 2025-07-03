@@ -92,8 +92,8 @@ func (t *ClerkAuthHandler) VerifyTokenMiddleware() gin.HandlerFunc {
 		// 存入 context，方便後續 handler 使用
 		c.Set("userID", userID)
 		c.Set("email", email)
+		c.Set("valid", true)
 		c.Set("claims", claims)
-
 		c.Next()
 	})
 }

@@ -12,6 +12,7 @@ import (
 	"ai-workshop/internal/uploads"
 	"ai-workshop/internal/user"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -162,14 +163,38 @@ func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
 	protectedUserRoutes.POST("/update-password", userHandler.UpdatePasswordUserHandler)
 	protectedUserRoutes.POST("/update-info", userHandler.UpdateInfoUserHandler)
 
-	// Clerk Routes
+	// Clerk Authentication Routes
 	clerkService := clerkauth.NewService()
 	clerkHandler := clerkauth.NewHandler(clerkService)
 
-	// Legacy Clerk routes (保持向後兼容)
-	ClerkRoutes := api.Group("/clerk")
-	ClerkRoutes.Use(clerkHandler.VerifyTokenMiddleware())
-	ClerkRoutes.GET("/verify-token", clerkHandler.VerifyToken)
+	// 公開
+	publicAuthRoutes := api.Group("/auth")
+	{
+		publicAuthRoutes.GET("/verify-token", clerkHandler.VerifyToken)
+		publicAuthRoutes.POST("/logout", func(c *gin.Context) {
+			// 登出邏輯 (前端處理 token 清除)
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Successfully logged out",
+				"success": true,
+			})
+		})
+	}
+
+	// 受保護
+	protectedAuthRoutes := api.Group("/auth")
+	protectedAuthRoutes.Use(clerkHandler.VerifyTokenMiddleware())
+	{
+		protectedAuthRoutes.GET("/user-profile", func(c *gin.Context) {
+			userID, _ := c.Get("userID")
+			email, _ := c.Get("email")
+			valid, _ := c.Get("valid")
+			c.JSON(http.StatusOK, gin.H{
+				"userID": userID,
+				"email":  email,
+				"valid":  valid,
+			})
+		})
+	}
 
 	return routes
 }

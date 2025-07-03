@@ -85,7 +85,7 @@ func InitClerkJWKs() error {
 
 	var err error
 	JWKs, err = keyfunc.Get(jwksURL, keyfunc.Options{
-		RefreshInterval: time.Hour,
+		RefreshInterval: time.Hour * 12,
 		RefreshTimeout:  time.Minute,
 	})
 	return err
@@ -121,7 +121,7 @@ func (s *clerkService) VerifyClerkToken(tokenString string) (*jwt.Token, error) 
 		}
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
-
+	fmt.Println("token", token)
 	if !token.Valid {
 		if s.debug {
 			fmt.Println("Token is not valid")
