@@ -159,3 +159,11 @@ func (s *UserService) CreateDefaultUsersService(Users []CreateDefaultUser) error
 
 	return s.Repo.CreateDefaultUsers(hashedPwUsers)
 }
+
+func (s *UserService) GetUserByClerkIDService(clerkID string) (*models.User, error) {
+	return s.Repo.GetByClerkID(clerkID)
+}
+
+func (s *UserService) CreateOrUpdateClerkUserService(clerkID, email, name string) (*models.User, error) {
+	return s.Repo.CreateOrUpdateClerkUser(clerkID, email, name)
+}

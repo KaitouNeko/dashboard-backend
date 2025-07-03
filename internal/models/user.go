@@ -15,11 +15,12 @@ import (
 **/
 type User struct {
 	BaseDBDateModel
-	Email      string `db:"email" json:"email"`
-	Name       string `db:"name" json:"name"`
-	Password   string `db:"password" json:"password,omitempty"`
-	Status     int    `db:"status" json:"status"`
-	Permission int    `db:"permission" json:"permission"`
+	Email      string  `db:"email" json:"email"`
+	Name       string  `db:"name" json:"name"`
+	Password   string  `db:"password" json:"password,omitempty"`
+	Status     int     `db:"status" json:"status"`
+	Permission int     `db:"permission" json:"permission"`
+	ClerkID    *string `db:"clerk_id" json:"clerkId,omitempty"`
 }
 
 /**

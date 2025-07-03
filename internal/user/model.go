@@ -62,3 +62,15 @@ type CreateDefaultUser struct {
 	Status     int       `db:"status"`
 	Permission int       `db:"permission"`
 }
+
+type ClerkUserSyncRequest struct {
+	ClerkID string `json:"clerkId"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+}
+
+type ClerkUserSyncResponse struct {
+	Success bool         `json:"success"`
+	Message string       `json:"message"`
+	User    *models.User `json:"user,omitempty"`
+}

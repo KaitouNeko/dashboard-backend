@@ -133,6 +133,72 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) GetByClerkID(clerkID string) (*models.User, error) {
+	var user models.User
+	query := `SELECT * FROM users WHERE clerk_id = $1`
+
+	err := r.DB.Get(&user, query, clerkID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove password from the struct
+	user.Password = ""
+	return &user, nil
+}
+
+func (r *UserRepository) CreateOrUpdateClerkUser(clerkID, email, name string) (*models.User, error) {
+	var user models.User
+
+	// 嘗試更新已存在的用戶
+	updateQuery := `
+		UPDATE users 
+		SET clerk_id = $1, name = $2, updated_at = CURRENT_TIMESTAMP
+		WHERE email = $3 AND clerk_id IS NULL
+		RETURNING *
+	`
+
+	err := r.DB.Get(&user, updateQuery, clerkID, name, email)
+	if err == nil {
+		// 更新成功
+		user.Password = ""
+		return &user, nil
+	}
+
+	// 如果更新失敗，檢查是否已經有 clerk_id 的用戶
+	existingQuery := `SELECT * FROM users WHERE clerk_id = $1`
+	err = r.DB.Get(&user, existingQuery, clerkID)
+	if err == nil {
+		// 已經存在，更新名稱
+		updateNameQuery := `
+			UPDATE users 
+			SET name = $1, updated_at = CURRENT_TIMESTAMP
+			WHERE clerk_id = $2
+			RETURNING *
+		`
+		err = r.DB.Get(&user, updateNameQuery, name, clerkID)
+		if err == nil {
+			user.Password = ""
+			return &user, nil
+		}
+	}
+
+	// 創建新用戶
+	insertQuery := `
+		INSERT INTO users (email, name, clerk_id, password, status, permission)
+		VALUES ($1, $2, $3, '', 1, 1)
+		RETURNING *
+	`
+
+	err = r.DB.Get(&user, insertQuery, email, name, clerkID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create clerk user: %w", err)
+	}
+
+	user.Password = ""
+	return &user, nil
+}
+
 func (r *UserRepository) CreateDefaultUsers(users []CreateDefaultUser) error {
 	query := `
 	INSERT INTO users(id, email, name, password, status)

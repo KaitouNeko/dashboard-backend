@@ -165,12 +165,13 @@ func SetupRoutes(config *config.Config, db *sqlx.DB) *gin.Engine {
 
 	// Clerk Authentication Routes
 	clerkService := clerkauth.NewService()
-	clerkHandler := clerkauth.NewHandler(clerkService)
+	clerkHandler := clerkauth.NewHandler(clerkService, userService)
 
 	// 公開
 	publicAuthRoutes := api.Group("/auth")
 	{
 		publicAuthRoutes.GET("/verify-token", clerkHandler.VerifyToken)
+		publicAuthRoutes.POST("/sync-user", clerkHandler.SyncClerkUser)
 		publicAuthRoutes.POST("/logout", func(c *gin.Context) {
 			// 登出邏輯 (前端處理 token 清除)
 			c.JSON(http.StatusOK, gin.H{
